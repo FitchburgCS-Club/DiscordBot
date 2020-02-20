@@ -6,8 +6,11 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 public class Bot {
 	private static final Map<String, Command> commands = new HashMap<>();
@@ -19,8 +22,20 @@ public class Bot {
 	}
 
 	public static void main(String[] args) {
-		// TODO: Add token, possibly read in from file for security reasons
-		DiscordClientBuilder builder = new DiscordClientBuilder("");
+		File file = new File("token");
+		Scanner sc = null;
+		try {
+			sc = new Scanner(file);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		DiscordClientBuilder builder = null;
+		if (sc != null) {
+			builder = new DiscordClientBuilder(sc.next());
+		} else {
+			System.out.println("Token File Empty!");
+			System.exit(1);
+		}
 		DiscordClient client = builder.build();
 
 		client.getEventDispatcher().on(MessageCreateEvent.class)
