@@ -36,3 +36,7 @@ gradle-app.setting
 
 # Cache of project
 .gradletasknamecache
+
+# Vim temp files
+*.swp
+*.swo
