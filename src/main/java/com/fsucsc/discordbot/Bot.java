@@ -1,54 +1,35 @@
 package com.fsucsc.discordbot;
 
-import discord4j.core.DiscordClient;
-import discord4j.core.DiscordClientBuilder;
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import net.dv8tion.jda.api.AccountType;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
 
+import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class Bot {
-	private static final Map<String, Command> commands = new HashMap<>();
-
-	static {
-		commands.put("ping", event -> event.getMessage().getChannel()
-				.flatMap(channel -> channel.createMessage("Pong!"))
-				.then());
-	}
-
-	public static void main(String[] args) {
-		File file = new File("token");
-		Scanner sc = null;
+	public static void main (String[] args) {
+		String token = null;
 		try {
-			sc = new Scanner(file);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			Scanner scan = new Scanner(new File("token"));
+			token = scan.nextLine();
 		}
-		DiscordClientBuilder builder = null;
-		if (sc != null) {
-			builder = new DiscordClientBuilder(sc.next());
-		} else {
-			System.out.println("Token File Empty!");
-			System.exit(1);
+		catch (FileNotFoundException | NoSuchElementException e) {
+			System.out.println("Error opening and reading token file.");
+			System.out.println("Are you sure it exists and contains the token for the discord bot?");
+			//NOTE(Michael): when working on the project, the 'token' file should be placed at the root of the repo
+			System.exit(-1);
 		}
-		DiscordClient client = builder.build();
 
-		client.getEventDispatcher().on(MessageCreateEvent.class)
-				.flatMap(event -> Mono.justOrEmpty(event.getMessage())
-                        // Makes sure it's not responding to itself
-                        .filter(message -> message.getAuthor().map(user -> !user.isBot()).orElse(false))
-						.flatMap(content -> Flux.fromIterable(commands.entrySet())
-								// We will be using ! as our "prefix" to any command in the system.
-								.filter(entry -> content.getContent().orElse("").startsWith('!' + entry.getKey()))
-								.flatMap(entry -> entry.getValue().execute(event))
-								.next()))
-				.subscribe();
-
-		client.login().block();
+		try {
+			JDA jda = new JDABuilder(AccountType.BOT).setToken(token).addEventListeners(new CommandListener()).build();
+		}
+		catch (LoginException | IllegalArgumentException e) {
+			System.out.println("Failed to Log in");
+			System.exit(-2);
+		}
 	}
 }

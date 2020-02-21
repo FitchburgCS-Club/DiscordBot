@@ -18,8 +18,9 @@ Here's how set up IntelliJ to be able to test run your code:
 2. Select edit configureations
 3. Click on the plus sign in the top left and then click on gradle
 4. Click on the folder button that is next to the textbox labeled Gradle Project, select the option that's the same as the project name.
-5. Click on "Apply" and you're done!
+5. In the textbox labeled "tasks" type the word "run" into it.
+6. Click on "Apply" and you're done!
 
-#Where should I go to learn how to use the Discord4j library?
-Use the link below. You'll want to give the function programming sections a read if you're new to that.
-https://github.com/Discord4J/Discord4J/wiki/Getting-Started
+#Where should I go to learn how to use the JDA library?
+Use the link below. Almost all java documentation is in this format, so become fast friends with it!
+https://ci.dv8tion.net/job/JDA/javadoc/index.html
