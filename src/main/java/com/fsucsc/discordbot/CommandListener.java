@@ -10,6 +10,12 @@ public class CommandListener extends ListenerAdapter {
 		Message msg = e.getChannel().retrieveMessageById(e.getMessageId()).complete ();
 		String rawMsg = msg.getContentRaw();
 
+		if (DisConfig.whitelistedUser != null) {
+			if (!msg.getAuthor().getId().equals(DisConfig.whitelistedUser)) {
+				return;
+			}
+		}
+
 		if (rawMsg.startsWith("!ping")) {
 				msg.getChannel().sendMessage("Pong!").queue ();
 		}
