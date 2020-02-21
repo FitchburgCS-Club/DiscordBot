@@ -1,7 +1,7 @@
-#Discord Bot
+# Discord Bot
 A bot for the FSU Computer Science Club's Discord Guild.
 
-#How do I set up my IDE to work with this code?
+# How do I set up my IDE to work with this code?
 You're not alone friend. Here's some steps to get started working on this project.
 
 1. Use git to clone this repo.
@@ -21,6 +21,6 @@ Here's how set up IntelliJ to be able to test run your code:
 5. In the textbox labeled "tasks" type the word "run" into it.
 6. Click on "Apply" and you're done!
 
-#Where should I go to learn how to use the JDA library?
+# Where should I go to learn how to use the JDA library?
 Use the link below. Almost all java documentation is in this format, so become fast friends with it!
 https://ci.dv8tion.net/job/JDA/javadoc/index.html
