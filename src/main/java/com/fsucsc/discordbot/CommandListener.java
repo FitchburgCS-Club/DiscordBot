@@ -7,8 +7,8 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 public class CommandListener extends ListenerAdapter {
 	//NOTE(Michael): we use onGenericMessage to allow for command testing in PMs.
-	public void onGenericMessage (GenericMessageEvent e) {
-		Message msg = e.getChannel().retrieveMessageById(e.getMessageId()).complete ();
+	public void onGenericMessage (GenericMessageEvent event) {
+		Message msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete ();
 		String rawMsg = msg.getContentRaw();
 
 		//IMPORTANT(Michael): The ordering here is perticular to evoke a certain behaivor.
@@ -29,13 +29,25 @@ public class CommandListener extends ListenerAdapter {
 		}
 
 		if (rawMsg.startsWith("!blacklist")) {
-			rawMsg = rawMsg.substring("!blacklist".length() + 1);
-			User usr = msg.getMentionedUsers().get(0);
-			if (rawMsg.startsWith ("add")) {
-				DisConfig.blackListedUsers.add (usr.getId());
+			boolean failed = false;
+			try {
+				rawMsg = rawMsg.substring("!blacklist".length() + 1);
+				User usr = msg.getMentionedUsers().get(0);
+				if (rawMsg.startsWith ("add")) {
+					DisConfig.blackListedUsers.add (usr.getId());
+				}
+				else if (rawMsg.startsWith ("remove")) {
+					DisConfig.blackListedUsers.remove (usr.getId());
+				}
+				else {
+					failed = true;
+				}
 			}
-			else if (rawMsg.startsWith ("remove")) {
-				DisConfig.blackListedUsers.remove (usr.getId());
+			catch (IndexOutOfBoundsException e) {
+				failed = true;
+			}
+			if (failed) {
+				msg.getChannel().sendMessage("Usage: `!blacklist <add|remove> <MentionedUser>`").queue();
 			}
 		}
 
