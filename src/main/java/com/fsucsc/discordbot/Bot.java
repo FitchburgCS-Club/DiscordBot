@@ -27,7 +27,7 @@ public class Bot {
 		}
 
 		try {
-			JDA jda = new JDABuilder(AccountType.BOT).setToken(DisConfig.token).addEventListeners(new CommandListener()).build();
+			 new JDABuilder(AccountType.BOT).setToken(DisConfig.token).addEventListeners(new CommandListener()).build();
 		}
 		catch (LoginException | IllegalArgumentException e) {
 			System.out.println("Failed to Log in");
