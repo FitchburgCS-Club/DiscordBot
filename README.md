@@ -27,7 +27,7 @@ Use the link below. Almost all java documentation is in this format, so become f
 
 https://ci.dv8tion.net/job/JDA/javadoc/index.html
 
-#How to construct your 'config' file
+# How to construct your 'config' file
 The first line should be the discord bot token.
 
 The second, optional line should be an User ID for the user
