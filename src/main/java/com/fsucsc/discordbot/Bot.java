@@ -17,6 +17,8 @@ public class Bot {
 			DisConfig.token = scan.nextLine();
 			if (scan.hasNextLine()) {
 				DisConfig.whitelistedUser = scan.nextLine();
+			} else {
+				DisConfig.whitelistedUser = null;
 			}
 		}
 		catch (FileNotFoundException | NoSuchElementException e) {
