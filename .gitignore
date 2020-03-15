@@ -22,6 +22,9 @@ token
 .idea/**/dictionaries
 .idea/**/shelf
 
+# This causes lots of headache, Idea does not like anything touching this file
+.idea/**/vcs.xml
+
 # Gradle
 .gradle
 /build/
