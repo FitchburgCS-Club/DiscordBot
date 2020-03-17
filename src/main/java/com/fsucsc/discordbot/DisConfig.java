@@ -5,7 +5,7 @@ import java.util.List;
 
 public final class DisConfig {
 	static String token = null;
-	static String whitelistedUser = "zja203#5285";
+	static String whitelistedUser = null;
 	static String outDir = ""; // Make sure to include the trailing "/"
 	static List<String> blackListedUsers = new ArrayList<>();
 }
