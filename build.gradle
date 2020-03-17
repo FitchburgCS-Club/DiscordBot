@@ -10,15 +10,26 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
-    compile 'net.dv8tion:JDA:4.1.1_108'
+    //(Michael): We exclude opus because it breaks task fatJar for some reason.
+    // Figure it out if you wanna do sound stuff!
+    compile ('net.dv8tion:JDA:4.1.1_108') {
+        exclude module: 'opus-java'
+    }
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
-repositories {
-    jcenter()
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Version': version,
+                'Main-Class': 'com.fsucsc.discordbot.Bot'
+    }
+    baseName = project.name + '-all' //(Michael): Black magic gradle that slurps up out dependencies and puts them in our jar file.
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
 }
 
 application {
