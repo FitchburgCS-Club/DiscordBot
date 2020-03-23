@@ -11,7 +11,7 @@ import java.io.IOException;
 public class CommandListener extends ListenerAdapter {
 	//NOTE(Michael): we use onGenericMessage to allow for command testing in PMs.
 	public void onGenericMessage (GenericMessageEvent event) {
-		Message msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete ();
+		Message msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
 		String rawMsg = msg.getContentRaw();
 
 		//IMPORTANT(Michael): The ordering here is perticular to evoke a certain behaivor.
@@ -34,19 +34,16 @@ public class CommandListener extends ListenerAdapter {
 		if (rawMsg.startsWith("!blacklist")) {
 			boolean failed = false;
 			try {
-				rawMsg = rawMsg.substring("!blacklist".length() + 1);
+				rawMsg = rawMsg.substring("!blacklist ".length());
 				User usr = msg.getMentionedUsers().get(0);
-				if (rawMsg.startsWith ("add")) {
-					DisConfig.blackListedUsers.add (usr.getId());
-				}
-				else if (rawMsg.startsWith ("remove")) {
-					DisConfig.blackListedUsers.remove (usr.getId());
-				}
-				else {
+				if (rawMsg.startsWith("add")) {
+					DisConfig.blackListedUsers.add(usr.getId());
+				} else if (rawMsg.startsWith("remove")) {
+					DisConfig.blackListedUsers.remove(usr.getId());
+				} else {
 					failed = true;
 				}
-			}
-			catch (IndexOutOfBoundsException e) {
+			} catch (IndexOutOfBoundsException e) {
 				failed = true;
 			}
 			if (failed) {
@@ -61,7 +58,7 @@ public class CommandListener extends ListenerAdapter {
 		}
 
 		if (rawMsg.startsWith("!ping")) {
-				msg.getChannel().sendMessage("Pong!").queue ();
+			msg.getChannel().sendMessage("Pong!").queue();
 		}
 
 		if (rawMsg.startsWith("!featurerequest")) {

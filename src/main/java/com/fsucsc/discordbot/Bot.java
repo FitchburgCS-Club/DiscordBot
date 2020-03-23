@@ -19,8 +19,7 @@ public class Bot {
 			} else {
 				DisConfig.whitelistedUser = null;
 			}
-		}
-		catch (FileNotFoundException | NoSuchElementException e) {
+		} catch (FileNotFoundException | NoSuchElementException ex) {
 			System.out.println("Error opening and reading config file.");
 			System.out.println("Are you sure it exists and contains the token for the discord bot?");
 			//NOTE(Michael): when working on the project, the 'config' file should be placed at the root of the repo
@@ -29,8 +28,7 @@ public class Bot {
 
 		try {
 			 new JDABuilder(AccountType.BOT).setToken(DisConfig.token).addEventListeners(new CommandListener()).build();
-		}
-		catch (LoginException | IllegalArgumentException e) {
+		} catch (LoginException | IllegalArgumentException ex) {
 			System.out.println("Failed to Log in");
 			System.exit(-2);
 		}
