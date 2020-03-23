@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.Exception;
 
 public class CommandListener extends ListenerAdapter {
 	//NOTE(Michael): we use onGenericMessage to allow for command testing in PMs.
@@ -32,7 +33,6 @@ public class CommandListener extends ListenerAdapter {
 		}
 
 		if (rawMsg.startsWith("!blacklist")) {
-			boolean failed = false;
 			try {
 				rawMsg = rawMsg.substring("!blacklist ".length());
 				User usr = msg.getMentionedUsers().get(0);
@@ -41,12 +41,9 @@ public class CommandListener extends ListenerAdapter {
 				} else if (rawMsg.startsWith("remove")) {
 					DisConfig.blackListedUsers.remove(usr.getId());
 				} else {
-					failed = true;
+					throw new Exception("Invalid Arguement");
 				}
-			} catch (IndexOutOfBoundsException e) {
-				failed = true;
-			}
-			if (failed) {
+			} catch (Exception ex) {
 				msg.getChannel().sendMessage("Usage: `!blacklist <add|remove> <MentionedUser>`").queue();
 			}
 		}
@@ -63,12 +60,19 @@ public class CommandListener extends ListenerAdapter {
 
 		if (rawMsg.startsWith("!featurerequest")) {
 			try (FileWriter fw = new FileWriter(DisConfig.outDir + "FeatureRequests.txt", true);) {
-				String message = msg.getContentStripped();
-				message = message.replace("\n", " ");
-				fw.write(message.substring(16) + "\n");
-				msg.getChannel().sendMessage("Submission Received!").queue();
+				String message = msg.getContentStripped()
+				                    .substring("!featurerequest ".length())
+				                    .replace("\n", " ")
+				                    .trim();
+				if (message.isEmpty()) {
+					throw new Exception ("Invalid Arguement");
+				}
+				fw.write(message + "\n");
+				msg.getChannel().sendMessage("Submission \"" + message + "\" Received!").queue();
 			} catch (IOException ex) {
-				ex.printStackTrace();
+				msg.getChannel().sendMessage("Fatal Error.\n" + ex + "\nShow this to a programmer.").queue();
+			} catch (Exception ex) {
+				msg.getChannel().sendMessage("Usage: `!featurerequest <Request>`").queue();
 			}
 		}
 	}
