@@ -6,8 +6,6 @@ import net.dv8tion.jda.api.events.message.GenericMessageEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.io.FileWriter;
-import java.io.IOException;
-import java.lang.Exception;
 
 public class CommandListener extends ListenerAdapter {
 	//NOTE(Michael): we use onGenericMessage to allow for command testing in PMs.
@@ -32,47 +30,49 @@ public class CommandListener extends ListenerAdapter {
 			}
 		}
 
-		if (rawMsg.startsWith("!blacklist")) {
-			try {
-				rawMsg = rawMsg.substring("!blacklist ".length());
-				User usr = msg.getMentionedUsers().get(0);
-				if (rawMsg.startsWith("add")) {
-					DisConfig.blackListedUsers.add(usr.getId());
-				} else if (rawMsg.startsWith("remove")) {
-					DisConfig.blackListedUsers.remove(usr.getId());
-				} else {
-					throw new Exception("Invalid Arguement");
-				}
-			} catch (Exception ex) {
-				msg.getChannel().sendMessage("Usage: `!blacklist <add|remove> <MentionedUser>`").queue();
+		if (rawMsg.startsWith("!")) {
+			String command = rawMsg.split(" ")[0].strip();
+
+			switch (command) {
+				case "!blacklist":
+					try {
+						rawMsg = rawMsg.substring("!blacklist ".length());
+						User usr = msg.getMentionedUsers().get(0);
+						if (rawMsg.startsWith("add")) {
+							DisConfig.blackListedUsers.add(usr.getId());
+						} else if (rawMsg.startsWith("remove")) {
+							DisConfig.blackListedUsers.remove(usr.getId());
+						} else {
+							throw new Exception("Invalid Arguement");
+						}
+					} catch (Exception ex) {
+						msg.getChannel().sendMessage("Usage: `!blacklist <add|remove> <MentionedUser>`").queue();
+					}
+					break;
+				case "!ping":
+					msg.getChannel().sendMessage("Pong!").queue();
+					break;
+				case "!featurerequest":
+					try (FileWriter fw = new FileWriter(DisConfig.outDir + "FeatureRequests.txt", true)) {
+						String message = msg.getContentStripped()
+								.substring("!featurerequest ".length())
+								.replace("\n", " ")
+								.trim();
+						if (message.isEmpty()) {
+							throw new Exception ("Invalid Argument");
+						}
+						fw.write(message + "\n");
+						msg.getChannel().sendMessage("Submission \"" + message + "\" Received!").queue();
+					} catch (Exception ex) {
+						msg.getChannel().sendMessage("Fatal Error.\n" + ex + "\nShow this to a programmer.").queue();
+					}
+					break;
 			}
 		}
 
 		for (String id : DisConfig.blackListedUsers) {
 			if (msg.getAuthor().getId().equals(id)) {
 				return;
-			}
-		}
-
-		if (rawMsg.startsWith("!ping")) {
-			msg.getChannel().sendMessage("Pong!").queue();
-		}
-
-		if (rawMsg.startsWith("!featurerequest")) {
-			try (FileWriter fw = new FileWriter(DisConfig.outDir + "FeatureRequests.txt", true);) {
-				String message = msg.getContentStripped()
-				                    .substring("!featurerequest ".length())
-				                    .replace("\n", " ")
-				                    .trim();
-				if (message.isEmpty()) {
-					throw new Exception ("Invalid Arguement");
-				}
-				fw.write(message + "\n");
-				msg.getChannel().sendMessage("Submission \"" + message + "\" Received!").queue();
-			} catch (IOException ex) {
-				msg.getChannel().sendMessage("Fatal Error.\n" + ex + "\nShow this to a programmer.").queue();
-			} catch (Exception ex) {
-				msg.getChannel().sendMessage("Usage: `!featurerequest <Request>`").queue();
 			}
 		}
 	}
