@@ -5,7 +5,12 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.GenericMessageEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CommandListener extends ListenerAdapter {
 	//NOTE(Michael): we use onGenericMessage to allow for command testing in PMs.
@@ -59,10 +64,20 @@ public class CommandListener extends ListenerAdapter {
 								.replace("\n", " ")
 								.trim();
 						if (message.isEmpty()) {
-							throw new Exception ("Invalid Argument");
+							throw new Exception("Invalid Argument");
 						}
 						fw.write(message + "\n");
 						msg.getChannel().sendMessage("Submission \"" + message + "\" Received!").queue();
+					} catch (Exception ex) {
+						msg.getChannel().sendMessage("Fatal Error.\n" + ex + "\nShow this to a programmer.").queue();
+					}
+					break;
+				case "!listfeatures":
+					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outDir + "FeatureRequests.txt"))) {
+						Stream<String> lines = br.lines();
+						msg.getChannel().sendMessage(String.join("\n", lines.collect(Collectors.toList()))).queue();
+					} catch (FileNotFoundException ex) {
+						msg.getChannel().sendMessage("No feature requests file found.").queue();
 					} catch (Exception ex) {
 						msg.getChannel().sendMessage("Fatal Error.\n" + ex + "\nShow this to a programmer.").queue();
 					}
