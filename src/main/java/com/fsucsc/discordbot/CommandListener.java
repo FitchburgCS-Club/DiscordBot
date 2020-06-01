@@ -1,14 +1,15 @@
 package com.fsucsc.discordbot;
 
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.EmbedType;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.GenericMessageEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.awt.*;
+import java.io.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,7 +49,7 @@ public class CommandListener extends ListenerAdapter {
 						} else if (rawMsg.startsWith("remove")) {
 							DisConfig.blackListedUsers.remove(usr.getId());
 						} else {
-							throw new Exception("Invalid Arguement");
+							throw new Exception("Invalid Argument");
 						}
 					} catch (Exception ex) {
 						msg.getChannel().sendMessage("Usage: `!blacklist <add|remove> <MentionedUser>`").queue();
@@ -82,6 +83,19 @@ public class CommandListener extends ListenerAdapter {
 						msg.getChannel().sendMessage("Fatal Error.\n" + ex + "\nShow this to a programmer.").queue();
 					}
 					break;
+				case "!mackaystandard":
+					EmbedBuilder builder = new EmbedBuilder();
+					builder.setColor(Color.RED);
+					builder.setImage("attachment://mackaystandard.jpeg");
+					builder.setTitle("Warning");
+					builder.setDescription("If you don't follow the Mackay standard, this could be you!");
+
+					try {
+						InputStream img = new FileInputStream("./mackaystandard.jpg");
+						msg.getChannel().sendFile(img, "mackaystandard.jpg").embed(builder.build()).queue();
+					} catch (FileNotFoundException ex) {
+						msg.getChannel().sendMessage("Error:\nImage not found on server.").queue();
+					}
 			}
 		}
 
