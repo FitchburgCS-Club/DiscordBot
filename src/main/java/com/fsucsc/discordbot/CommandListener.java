@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.awt.*;
 import java.io.*;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,16 +68,26 @@ public class CommandListener extends ListenerAdapter {
 						if (message.isEmpty()) {
 							throw new Exception("Invalid Argument");
 						}
-						fw.write(message + "\n");
+						fw.write(message + "|" + msg.getAuthor().getName() + "\n");
 						msg.getChannel().sendMessage("Submission \"" + message + "\" Received!").queue();
 					} catch (Exception ex) {
 						msg.getChannel().sendMessage("Fatal Error.\n" + ex + "\nShow this to a programmer.").queue();
 					}
 					break;
-				case "!listfeatures":
+				case "!listrequests":
 					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outDir + "FeatureRequests.txt"))) {
 						Stream<String> lines = br.lines();
-						msg.getChannel().sendMessage(String.join("\n", lines.collect(Collectors.toList()))).queue();
+						String message = "";
+						ArrayList linelist = (ArrayList) lines.collect(Collectors.toList());
+						int i = 1;
+						for (Object l : linelist) {
+							// for loop doesn't want to take a string for some reason so we have to use a plain object and cast to string.
+							String r = (String)l;
+							String[] parts = r.split("\\|");
+							message += i+". "+parts[0]+" -- "+parts[1]+"\n";
+							i++;
+						}
+						msg.getChannel().sendMessage(message).queue();
 					} catch (FileNotFoundException ex) {
 						msg.getChannel().sendMessage("No feature requests file found.").queue();
 					} catch (Exception ex) {
@@ -96,6 +107,8 @@ public class CommandListener extends ListenerAdapter {
 					} catch (FileNotFoundException ex) {
 						msg.getChannel().sendMessage("Error:\nImage not found on server.").queue();
 					}
+				default:
+					msg.getChannel().sendMessage("Unknown Command!").queue();
 			}
 		}
 
