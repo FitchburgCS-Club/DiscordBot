@@ -10,18 +10,19 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.awt.Color;
 import java.io.*;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CommandListener extends ListenerAdapter {
 	//NOTE(Michael): we use onGenericMessage to allow for command testing in PMs.
+	//Make sure Guild reliant stuff works properly (or at least passably) in PMs!
 	public void onGenericMessage (GenericMessageEvent event) {
 		Message msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
 		String rawMsg = msg.getContentRaw();
 
-		//IMPORTANT(Michael): The ordering here is perticular to evoke a certain behaivor.
-		//If a whitelist exists, we enforce it first and formost. A whitelist should
+		//IMPORTANT(Michael): The ordering here is particular to evoke a certain behavior.
+		//If a whitelist exists, we enforce it first and foremost. A whitelist should
 		//only exist in a dev build of the bot.
 		//Next, we want to process any !blacklist commands so that even if someone
 		//is blacklisted they can unblacklist themselves. Blacklisting is intended to help
@@ -60,6 +61,7 @@ public class CommandListener extends ListenerAdapter {
 					msg.getChannel().sendMessage("Pong!").queue();
 					break;
 				case "!featurerequest":
+				    //TODO(Michael): Save author better
 					try (FileWriter fw = new FileWriter(DisConfig.outDir + "FeatureRequests.txt", true)) {
 						String message = msg.getContentStripped()
 								.substring("!featurerequest ".length())
@@ -75,18 +77,19 @@ public class CommandListener extends ListenerAdapter {
 					}
 					break;
 				case "!listrequests":
+					//TODO(Michael): Send author better
 					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outDir + "FeatureRequests.txt"))) {
 						Stream<String> lines = br.lines();
 						String message = "";
-						ArrayList linelist = (ArrayList) lines.collect(Collectors.toList());
-						int i = 1;
-						for (Object l : linelist) {
-							// for loop doesn't want to take a string for some reason so we have to use a plain object and cast to string.
-							String r = (String)l;
-							String[] parts = r.split("\\|");
+						List<String> linelist = lines.collect(Collectors.toList());
+						//for (String l : linelist) {
+						for (int i = 1; i < linelist.size(); i++) {
+							String[] parts = linelist.get(i).split("\\|");
+							//NOTE(Michael): parts[0] == Content, parts[1] == Author
 							message += i+". "+parts[0]+" -- "+parts[1]+"\n";
-							i++;
+							//TODO(Michael): look into if StringBuilders are better for this sort of thing.
 						}
+						//TODO(Michael): Streamline sending reply messages to commands, this just looks silly typing it all out again and again.
 						msg.getChannel().sendMessage(message).queue();
 					} catch (FileNotFoundException ex) {
 						msg.getChannel().sendMessage("No feature requests file found.").queue();
@@ -95,6 +98,7 @@ public class CommandListener extends ListenerAdapter {
 					}
 					break;
 				case "!mackaystandard":
+					//TODO(Michael): I think there's a way to include images in embeds? look into it.
 					EmbedBuilder builder = new EmbedBuilder();
 					builder.setColor(Color.RED);
 					builder.setImage("attachment://mackaystandard.jpeg");
