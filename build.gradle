@@ -14,11 +14,7 @@ repositories {
 }
 
 dependencies {
-    //(Michael): We exclude opus because it breaks task fatJar for some reason.
-    // Figure it out if you wanna do sound stuff!
-    compile ('net.dv8tion:JDA:4.1.1_108') {
-        exclude module: 'opus-java'
-    }
+    compile ('net.dv8tion:JDA:4.1.1_108')
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
@@ -27,8 +23,27 @@ task fatJar(type: Jar) {
         attributes 'Implementation-Version': version,
                 'Main-Class': 'com.fsucsc.discordbot.Bot'
     }
-    baseName = project.name + '-all' //(Michael): Black magic gradle that slurps up out dependencies and puts them in our jar file.
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    /*
+    (Zack): Code the runs through all the things that need to go into the jar.
+    If it's a directory, it just puts it in, if it's a jar, it unzips it, if it's neither
+    it just puts it in.
+     */
+    baseName = project.name + '-all'
+    from {
+        configurations.compile.collect {
+            if (it.isDirectory()) {
+                it
+            } else {
+                //(Zack): split actually takes in a regex, so it needs two slashes to properly escape the '.'
+                //(Zack): Not sure if anything will ever be a zip as opposed to a jar, but the code will handle it nonetheless
+                if (it.name.split("\\.")[-1] == "jar" || it.name.split("\\.")[-1] == "zip") {
+                    zipTree(it)
+                } else {
+                    it
+                }
+            }
+        }
+    }
     with jar
 }
 

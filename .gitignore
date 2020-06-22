@@ -1,5 +1,7 @@
-# Discord Bot Config File
+# Discord Bot related files
 config
+featureRequests.txt
+
 
 # Compiled class file
 *.class
