@@ -52,6 +52,8 @@ public class CommandListener extends ListenerAdapter {
 					} else {
 						throw new IllegalArgumentException();
 					}
+					//TODO(Michael): Using IllegalArgumentExceptions here might mask errors under some circumstances.
+					//We should consider making our own exception class, so that we are sure that there are no error masking going on.
 				} catch (IllegalArgumentException ex) {
 					msg.getChannel().sendMessage("Usage: `!blacklist <add|remove> <MentionedUser>`").queue();
 				} catch (Exception ex) {
@@ -95,16 +97,22 @@ public class CommandListener extends ListenerAdapter {
 					//TODO(Michael): Send author better
 					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outDir + "FeatureRequests.txt"))) {
 						Stream<String> lines = br.lines();
-						String message = "";
+						StringBuilder reply = new StringBuilder(2000);
 						List<String> linelist = lines.collect(Collectors.toList());
-						for (int i = 1; i < linelist.size(); i++) {
-							String[] parts = linelist.get(i).split("\\|");
+						for (int i = 1; i < linelist.size() + 1; i++) {
+							String[] parts = linelist.get(i-1).split("\\|");
 							//NOTE(Michael): parts[0] == Content, parts[1] == Author
-							message += i + ". " + parts[0] + " -- " + parts[1] + "\n";
-							//TODO(Michael): look into if StringBuilders are better for this sort of thing.
+                            reply.append(i).append(". ").append(parts[0])
+								.append(" -- ").append(parts[1]).append("\n");
 						}
 						//TODO(Michael): Streamline sending reply messages to commands, this just looks silly typing it all out again and again.
-						msg.getChannel().sendMessage(message).queue();
+						if (reply.length() == 0) {
+							msg.getChannel().sendMessage("There are no feature requests.").queue();
+						} else if (reply.length() > 2000)
+							msg.getChannel().sendMessage("The bot has a feature request:\n1. Allow me to send messages over 2000 characters. -- FSUCSC Bot").queue();
+						else {
+							msg.getChannel().sendMessage(reply).queue();
+						}
 					} catch (FileNotFoundException ex) {
 						msg.getChannel().sendMessage("No feature requests file found.").queue();
 					} catch (Exception ex) {
@@ -135,6 +143,5 @@ public class CommandListener extends ListenerAdapter {
 					msg.getChannel().sendMessage("Unknown Command!").queue();
 			}
 		}
-
 	}
 }
