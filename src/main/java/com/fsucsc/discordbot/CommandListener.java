@@ -37,17 +37,22 @@ public class CommandListener extends ListenerAdapter {
 		}
 
 		if (rawMsg.startsWith("!")) {
-			String command = rawMsg.split(" ")[0].strip();
+			String command = "";
+			try { command = rawMsg.substring(0, rawMsg.indexOf(" ")); }
+			catch (Exception ignored) { command = rawMsg; }
+
+			String args = "";
+			try { args = rawMsg.substring(rawMsg.indexOf(" ")); }
+			catch (Exception ignored) { args = ""; }
 
 			//NOTE(Micahel): We *cannot* move this command; the blacklist command *must* be usable even while blacklisted
 			//to function as intended.
 			if (command.equals("!blacklist")) {
 				try {
-					rawMsg = rawMsg.substring("!blacklist ".length());
 					User usr = msg.getMentionedUsers().get(0);
-					if (rawMsg.startsWith("add")) {
+					if (args.startsWith("add")) {
 						DisConfig.blackListedUsers.add(usr.getId());
-					} else if (rawMsg.startsWith("remove")) {
+					} else if (args.startsWith("remove")) {
 						DisConfig.blackListedUsers.remove(usr.getId());
 					} else {
 						throw new IllegalArgumentException();
@@ -76,15 +81,12 @@ public class CommandListener extends ListenerAdapter {
 				case "!featurerequest":
 				    //TODO(Michael): Save author better
 					try (FileWriter fw = new FileWriter(DisConfig.outDir + "FeatureRequests.txt", true)) {
-						String message = msg.getContentStripped()
-								.substring("!featurerequest ".length())
-								.replace("\n", " ")
-								.trim();
-						if (message.isEmpty()) {
+						args = args.replace("\n", " ").trim();
+						if (args.isEmpty()) {
 							throw new IllegalArgumentException();
 						}
-						fw.write(message + "|" + msg.getAuthor().getName() + "\n");
-						msg.getChannel().sendMessage("Submission \"" + message + "\" Received!").queue();
+						fw.write(args + "|" + msg.getAuthor().getName() + "\n");
+						msg.getChannel().sendMessage("Submission \"" + args + "\" Received!").queue();
 					} catch (IllegalArgumentException ex) {
 						msg.getChannel().sendMessage("Usage: `!featurerequest <Text Containing Your Feature Request>`").queue();
 					} catch (Exception ex) {
