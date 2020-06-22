@@ -39,26 +39,35 @@ public class CommandListener extends ListenerAdapter {
 		if (rawMsg.startsWith("!")) {
 			String command = rawMsg.split(" ")[0].strip();
 
-			switch (command) {
-				case "!blacklist":
-					try {
-						rawMsg = rawMsg.substring("!blacklist ".length());
-						User usr = msg.getMentionedUsers().get(0);
-						if (rawMsg.startsWith("add")) {
-							DisConfig.blackListedUsers.add(usr.getId());
-						} else if (rawMsg.startsWith("remove")) {
-							DisConfig.blackListedUsers.remove(usr.getId());
-						} else {
-							throw new IllegalArgumentException();
-						}
-					} catch (IllegalArgumentException ex) {
-						msg.getChannel().sendMessage("Usage: `!blacklist <add|remove> <MentionedUser>`").queue();
-					} catch (Exception ex) {
-						StringWriter sw = new StringWriter();
-						ex.printStackTrace(new PrintWriter(sw));
-						msg.getChannel().sendMessage ("An unexpected exception occurred! Here's the info:\n" + sw.toString()).queue();
+			//NOTE(Micahel): We *cannot* move this command; the blacklist command *must* be usable even while blacklisted
+			//to function as intended.
+			if (command.equals("!blacklist")) {
+				try {
+					rawMsg = rawMsg.substring("!blacklist ".length());
+					User usr = msg.getMentionedUsers().get(0);
+					if (rawMsg.startsWith("add")) {
+						DisConfig.blackListedUsers.add(usr.getId());
+					} else if (rawMsg.startsWith("remove")) {
+						DisConfig.blackListedUsers.remove(usr.getId());
+					} else {
+						throw new IllegalArgumentException();
 					}
-					break;
+				} catch (IllegalArgumentException ex) {
+					msg.getChannel().sendMessage("Usage: `!blacklist <add|remove> <MentionedUser>`").queue();
+				} catch (Exception ex) {
+					StringWriter sw = new StringWriter();
+					ex.printStackTrace(new PrintWriter(sw));
+					msg.getChannel().sendMessage("An unexpected exception occurred! Here's the info:\n" + sw.toString()).queue();
+				}
+			}
+
+			for (String id : DisConfig.blackListedUsers) {
+				if (msg.getAuthor().getId().equals(id)) {
+					return; //NOTE(Michael): Blacklisted users don't get past this point.
+				}
+			}
+
+			switch (command) {
 				case "!ping":
 					msg.getChannel().sendMessage("Pong!").queue();
 					break;
@@ -127,10 +136,5 @@ public class CommandListener extends ListenerAdapter {
 			}
 		}
 
-		for (String id : DisConfig.blackListedUsers) {
-			if (msg.getAuthor().getId().equals(id)) {
-				return;
-			}
-		}
 	}
 }
