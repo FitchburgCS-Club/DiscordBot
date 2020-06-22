@@ -3,7 +3,7 @@ package com.fsucsc.discordbot;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.events.message.GenericMessageEvent;
+import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.awt.Color;
@@ -13,9 +13,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CommandListener extends ListenerAdapter {
-	//NOTE(Michael): we use onGenericMessage to allow for command testing in PMs.
-	//Make sure Guild reliant stuff works properly (or at least passably) in PMs!
-	public void onGenericMessage (GenericMessageEvent event) {
+	public void onGuildMessageReceived (GuildMessageReceivedEvent event) {
 		Message msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
 		String rawMsg = msg.getContentRaw();
 
@@ -79,13 +77,12 @@ public class CommandListener extends ListenerAdapter {
 					msg.getChannel().sendMessage("Pong!").queue();
 					break;
 				case "!featurerequest":
-				    //TODO(Michael): Save author better
 					try (FileWriter fw = new FileWriter(DisConfig.outDir + "FeatureRequests.txt", true)) {
 						args = args.replace("\n", " ").trim();
 						if (args.isEmpty()) {
 							throw new IllegalArgumentException();
 						}
-						fw.write(args + "|" + msg.getAuthor().getName() + "\n");
+						fw.write(args + "|" + msg.getAuthor().getId() + "\n");
 						msg.getChannel().sendMessage("Submission \"" + args + "\" Received!").queue();
 					} catch (IllegalArgumentException ex) {
 						msg.getChannel().sendMessage("Usage: `!featurerequest <Text Containing Your Feature Request>`").queue();
@@ -96,7 +93,6 @@ public class CommandListener extends ListenerAdapter {
 					}
 					break;
 				case "!listrequests":
-					//TODO(Michael): Send author better
 					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outDir + "FeatureRequests.txt"))) {
 						Stream<String> lines = br.lines();
 						StringBuilder reply = new StringBuilder(2000);
@@ -104,6 +100,7 @@ public class CommandListener extends ListenerAdapter {
 						for (int i = 1; i < linelist.size() + 1; i++) {
 							String[] parts = linelist.get(i-1).split("\\|");
 							//NOTE(Michael): parts[0] == Content, parts[1] == Author
+							parts[1] = msg.getGuild().getMemberById(parts[1]).getEffectiveName();
                             reply.append(i).append(". ").append(parts[0])
 								.append(" -- ").append(parts[1]).append("\n");
 						}
