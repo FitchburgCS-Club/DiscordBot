@@ -58,11 +58,9 @@ public class CommandListener extends ListenerAdapter {
 					//TODO(Michael): Using IllegalArgumentExceptions here might mask errors under some circumstances.
 					//We should consider making our own exception class, so that we are sure that there are no error masking going on.
 				} catch (IllegalArgumentException ex) {
-					msg.getChannel().sendMessage("Usage: `!blacklist <add|remove> <MentionedUser>`").queue();
+					Bot.SendMessage(msg.getChannel(), "Usage: `!blacklist <add|remove> <MentionedUser>`");
 				} catch (Exception ex) {
-					StringWriter sw = new StringWriter();
-					ex.printStackTrace(new PrintWriter(sw));
-					msg.getChannel().sendMessage("An unexpected exception occurred! Here's the info:\n" + sw.toString()).queue();
+					Bot.ReportStackTrace(ex, msg.getChannel());
 				}
 			}
 
@@ -74,7 +72,7 @@ public class CommandListener extends ListenerAdapter {
 
 			switch (command) {
 				case "!ping":
-					msg.getChannel().sendMessage("Pong!").queue();
+					Bot.SendMessage(msg.getChannel(), "Pong!");
 					break;
 				case "!featurerequest":
 					try (FileWriter fw = new FileWriter(DisConfig.outDir + "FeatureRequests.txt", true)) {
@@ -83,13 +81,11 @@ public class CommandListener extends ListenerAdapter {
 							throw new IllegalArgumentException();
 						}
 						fw.write(args + "|" + msg.getAuthor().getId() + "\n");
-						msg.getChannel().sendMessage("Submission \"" + args + "\" Received!").queue();
+						Bot.SendMessage(msg.getChannel(), "Submission \"" + args + "\" Received!");
 					} catch (IllegalArgumentException ex) {
-						msg.getChannel().sendMessage("Usage: `!featurerequest <Text Containing Your Feature Request>`").queue();
+						Bot.SendMessage(msg.getChannel(), "Usage: `!featurerequest <Text Containing Your Feature Request>`");
 					} catch (Exception ex) {
-						StringWriter sw = new StringWriter();
-						ex.printStackTrace(new PrintWriter(sw));
-						msg.getChannel().sendMessage ("An unexpected exception occurred! Here's the info:\n" + sw.toString()).queue();
+						Bot.ReportStackTrace(ex, msg.getChannel());
 					}
 					break;
 				case "!listrequests":
@@ -106,18 +102,15 @@ public class CommandListener extends ListenerAdapter {
 						}
 						//TODO(Michael): Streamline sending reply messages to commands, this just looks silly typing it all out again and again.
 						if (reply.length() == 0) {
-							msg.getChannel().sendMessage("There are no feature requests.").queue();
-						} else if (reply.length() > 2000)
-							msg.getChannel().sendMessage("The bot has a feature request:\n1. Allow me to send messages over 2000 characters. -- FSUCSC Bot").queue();
+							Bot.SendMessage(msg.getChannel(), "There are no feature requests.");
+						}
 						else {
-							msg.getChannel().sendMessage(reply).queue();
+							Bot.SendMessage(msg.getChannel(), reply.toString());
 						}
 					} catch (FileNotFoundException ex) {
-						msg.getChannel().sendMessage("No feature requests file found.").queue();
+						Bot.SendMessage(msg.getChannel(), "No feature requests file found.");
 					} catch (Exception ex) {
-						StringWriter sw = new StringWriter();
-						ex.printStackTrace(new PrintWriter(sw));
-						msg.getChannel().sendMessage ("An unexpected exception occurred! Here's the info:\n" + sw.toString()).queue();
+						Bot.ReportStackTrace(ex, msg.getChannel());
 					}
 					break;
 				case "!mackaystandard":
@@ -132,14 +125,12 @@ public class CommandListener extends ListenerAdapter {
 						InputStream img = new FileInputStream("./mackaystandard.jpg");
 						msg.getChannel().sendFile(img, "mackaystandard.jpg").embed(builder.build()).queue();
 					} catch (FileNotFoundException ex) {
-						msg.getChannel().sendMessage("Error:\nImage not found on server.").queue();
+						Bot.SendMessage(msg.getChannel(), "Error:\nImage not found on server.");
 					} catch (Exception ex) {
-						StringWriter sw = new StringWriter();
-						ex.printStackTrace(new PrintWriter(sw));
-						msg.getChannel().sendMessage ("An unexpected exception occurred! Here's the info:\n" + sw.toString()).queue();
+						Bot.ReportStackTrace(ex, msg.getChannel());
 					}
 				default:
-					msg.getChannel().sendMessage("Unknown Command!").queue();
+					Bot.SendMessage(msg.getChannel(), "Unknown Command!");
 			}
 		}
 	}
