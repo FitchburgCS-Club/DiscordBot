@@ -40,7 +40,7 @@ public class CommandListener extends ListenerAdapter {
 			catch (Exception ignored) { command = rawMsg; }
 
 			String args = "";
-			try { args = rawMsg.substring(rawMsg.indexOf(" ")); }
+			try { args = rawMsg.substring(rawMsg.indexOf(" ") + 1); }
 			catch (Exception ignored) { args = ""; }
 
 			//NOTE(Micahel): We *cannot* move this command; the blacklist command *must* be usable even while blacklisted
@@ -50,15 +50,13 @@ public class CommandListener extends ListenerAdapter {
 					User usr = msg.getMentionedUsers().get(0);
 					if (args.startsWith("add")) {
 						DisConfig.blackListedUsers.add(usr.getId());
+						return;
 					} else if (args.startsWith("remove")) {
 						DisConfig.blackListedUsers.remove(usr.getId());
+						return;
 					} else {
-						throw new IllegalArgumentException();
+                        Bot.SendMessage(msg.getChannel(), "Usage: `!blacklist <add|remove> <MentionedUser>`");
 					}
-					//TODO(Michael): Using IllegalArgumentExceptions here might mask errors under some circumstances.
-					//We should consider making our own exception class, so that we are sure that there are no error masking going on.
-				} catch (IllegalArgumentException ex) {
-					Bot.SendMessage(msg.getChannel(), "Usage: `!blacklist <add|remove> <MentionedUser>`");
 				} catch (Exception ex) {
 					Bot.ReportStackTrace(ex, msg.getChannel());
 				}
