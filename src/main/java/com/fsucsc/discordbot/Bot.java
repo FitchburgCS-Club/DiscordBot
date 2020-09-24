@@ -42,7 +42,7 @@ public class Bot {
 	}
 
 	public static void main (String[] args) {
-		try (Scanner scan = new Scanner(new File("config"));) {
+		try (Scanner scan = new Scanner(new File("config"))) {
 			DisConfig.token = scan.nextLine();
 			if (scan.hasNextLine()) {
 				DisConfig.whitelistedUser = scan.nextLine();
