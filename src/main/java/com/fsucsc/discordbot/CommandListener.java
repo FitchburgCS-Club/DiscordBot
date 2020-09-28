@@ -1,19 +1,20 @@
 package com.fsucsc.discordbot;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-import java.awt.Color;
+import java.awt.*;
 import java.io.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CommandListener extends ListenerAdapter {
-	public void onGuildMessageReceived (GuildMessageReceivedEvent event) {
+	public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
 		Message msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
 		String rawMsg = msg.getContentRaw();
 
@@ -36,30 +37,66 @@ public class CommandListener extends ListenerAdapter {
 
 		if (rawMsg.startsWith("!")) {
 			String command = "";
-			try { command = rawMsg.substring(0, rawMsg.indexOf(" ")); }
-			catch (Exception ignored) { command = rawMsg; }
+			try {
+				command = rawMsg.substring(0, rawMsg.indexOf(" "));
+			} catch (Exception ignored) {
+				command = rawMsg;
+			}
 
 			String args = "";
-			try { args = rawMsg.substring(rawMsg.indexOf(" ") + 1); }
-			catch (Exception ignored) { args = ""; }
+			try {
+				args = rawMsg.substring(rawMsg.indexOf(" ") + 1);
+			} catch (Exception ignored) {
+				args = "";
+			}
 
 			//NOTE(Micahel): We *cannot* move this command; the blacklist command *must* be usable even while blacklisted
 			//to function as intended.
 			if (command.equals("!blacklist")) {
 				try {
-					User usr = msg.getMentionedUsers().get(0);
-					if (args.startsWith("add")) {
-						DisConfig.blackListedUsers.add(usr.getId());
-						return;
-					} else if (args.startsWith("remove")) {
-						DisConfig.blackListedUsers.remove(usr.getId());
-						return;
+					if (args.equals("!blacklist")) {
+						String blacklistedUsers = "";
+						User tmpusr;
+						JDA jda = msg.getJDA();
+						for (String user : DisConfig.blackListedUsers) {
+							tmpusr = jda.getUserById(user);
+							blacklistedUsers += tmpusr.getName() + "\n";
+						}
+						if (blacklistedUsers.isEmpty()) {
+							blacklistedUsers = "None";
+						}
+						Bot.SendMessage(msg.getChannel(), "Blacklisted Users\n----------------\n" + blacklistedUsers);
+						//return;
 					} else {
-                        Bot.SendMessage(msg.getChannel(), "Usage: `!blacklist <add|remove> <MentionedUser>`");
+						try {
+							User usr = msg.getMentionedUsers().get(0);
+							if (args.startsWith("add")) {
+								if (DisConfig.blackListedUsers.contains(usr.getId())) {
+									Bot.SendMessage(msg.getChannel(), usr.getName() + " is already blacklisted!");
+									return;
+								}
+								DisConfig.blackListedUsers.add(usr.getId());
+								Bot.SendMessage(msg.getChannel(), usr.getName() + " added to blacklist.");
+								//return;
+							} else if (args.startsWith("remove")) {
+								if (!DisConfig.blackListedUsers.contains(usr.getId())) {
+									Bot.SendMessage(msg.getChannel(), usr.getName() + " is not blacklisted!");
+									return;
+								}
+								DisConfig.blackListedUsers.remove(usr.getId());
+								Bot.SendMessage(msg.getChannel(), usr.getName() + " removed from blacklist.");
+								//return;
+							} else {
+								Bot.SendMessage(msg.getChannel(), "Usage: `!blacklist <add|remove> <MentionedUser>`");
+							}
+						} catch (IndexOutOfBoundsException e) {
+							Bot.SendMessage(msg.getChannel(), "No user mentioned!");
+						}
 					}
 				} catch (Exception ex) {
 					Bot.ReportStackTrace(ex, msg.getChannel());
 				}
+				return;
 			}
 
 			for (String id : DisConfig.blackListedUsers) {
@@ -92,17 +129,16 @@ public class CommandListener extends ListenerAdapter {
 						StringBuilder reply = new StringBuilder(2000);
 						List<String> linelist = lines.collect(Collectors.toList());
 						for (int i = 1; i < linelist.size() + 1; i++) {
-							String[] parts = linelist.get(i-1).split("\\|");
+							String[] parts = linelist.get(i - 1).split("\\|");
 							//NOTE(Michael): parts[0] == Content, parts[1] == Author
 							parts[1] = msg.getGuild().getMemberById(parts[1]).getEffectiveName();
-                            reply.append(i).append(". ").append(parts[0])
-								.append(" -- ").append(parts[1]).append("\n");
+							reply.append(i).append(". ").append(parts[0])
+									.append(" -- ").append(parts[1]).append("\n");
 						}
 						//TODO(Michael): Streamline sending reply messages to commands, this just looks silly typing it all out again and again.
 						if (reply.length() == 0) {
 							Bot.SendMessage(msg.getChannel(), "There are no feature requests.");
-						}
-						else {
+						} else {
 							Bot.SendMessage(msg.getChannel(), reply.toString());
 						}
 					} catch (FileNotFoundException ex) {
