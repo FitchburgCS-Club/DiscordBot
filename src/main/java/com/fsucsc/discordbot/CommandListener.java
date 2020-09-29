@@ -45,8 +45,8 @@ public class CommandListener extends ListenerAdapter {
 				command = rawMsg;
 				args = "";
 			}
-
-			//NOTE(Micahel): We *cannot* move this command; the blacklist command *must* be usable even while blacklisted
+      
+			//NOTE(Michael): We *cannot* move this command; the blacklist command *must* be usable even while blacklisted
 			//to function as intended.
 			if (command.equals("!blacklist")) {
 					if (args.isEmpty()) {
@@ -118,9 +118,9 @@ public class CommandListener extends ListenerAdapter {
 					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outDir + "FeatureRequests.txt"))) {
 						Stream<String> lines = br.lines();
 						StringBuilder reply = new StringBuilder(2000);
-						List<String> linelist = lines.collect(Collectors.toList());
-						for (int i = 1; i < linelist.size() + 1; i++) {
-							String[] parts = linelist.get(i - 1).split("\\|");
+						List<String> requestlist = lines.collect(Collectors.toList());
+						for (int i = 1; i < requestlist.size() + 1; i++) {
+							String[] parts = requestlist.get(i-1).split("\\|");
 							//NOTE(Michael): parts[0] == Content, parts[1] == Author
 							parts[1] = msg.getGuild().getMemberById(parts[1]).getEffectiveName();
 							reply.append(i).append(". ").append(parts[0])
@@ -131,6 +131,31 @@ public class CommandListener extends ListenerAdapter {
 							Bot.SendMessage(msg.getChannel(), "There are no feature requests.");
 						} else {
 							Bot.SendMessage(msg.getChannel(), reply.toString());
+						}
+					} catch (FileNotFoundException ex) {
+						Bot.SendMessage(msg.getChannel(), "No feature requests file found.");
+					} catch (Exception ex) {
+						Bot.ReportStackTrace(ex, msg.getChannel());
+					}
+					break;
+				case "!removerequest":
+					int requestNum = Integer.parseInt(args) - 1;
+					String oldRequest;
+					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outDir + "FeatureRequests.txt"))) {
+						Stream<String> lines = br.lines();
+						List<String> requestlist = lines.collect(Collectors.toList());
+						try {
+							oldRequest = requestlist.get(requestNum).split("\\|")[0];
+							requestlist.remove(requestNum);
+							BufferedWriter bw = new BufferedWriter(new FileWriter(DisConfig.outDir + "FeatureRequests.txt"));
+							for (String s : requestlist) {
+								bw.write(s + "\n");
+							}
+							bw.flush();
+							bw.close();
+							Bot.SendMessage(msg.getChannel(), "Request \"" + oldRequest + "\" removed.");
+						} catch (IndexOutOfBoundsException ex) {
+							Bot.SendMessage(msg.getChannel(), "Invalid Request ID!");
 						}
 					} catch (FileNotFoundException ex) {
 						Bot.SendMessage(msg.getChannel(), "No feature requests file found.");
