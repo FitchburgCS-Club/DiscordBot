@@ -14,8 +14,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CommandListener extends ListenerAdapter {
-	public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
-		Message msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
+	public void onGuildMessageReceived (GuildMessageReceivedEvent event) {
+		Message msg = event.getChannel()
+		                   .retrieveMessageById(event.getMessageId())
+		                   .complete();
 		String rawMsg = msg.getContentRaw();
 
 		//IMPORTANT(Michael): The ordering here is particular to evoke a certain behavior.
@@ -29,39 +31,43 @@ public class CommandListener extends ListenerAdapter {
 		//And finally, after the blacklist has been enforced, we process the message for the
 		//rest of the commands.
 
-		if (DisConfig.whitelistedUser != null) {
-			if (!msg.getAuthor().getId().equals(DisConfig.whitelistedUser)) {
+		if (DisConfig.whitelistedUserId != 0) {
+			if (msg.getAuthor()
+			       .getIdLong() == DisConfig.whitelistedUserId) {
 				return;
 			}
 		}
 
 		if (rawMsg.startsWith("!")) {
-			String command = "";
-			String args = "";
+			String command = null;
+			String args = null;
 			try {
 				command = rawMsg.substring(0, rawMsg.indexOf(" "));
 				args = rawMsg.substring(rawMsg.indexOf(" ") + 1);
-			} catch (Exception ignored) {
+			}
+			catch (Exception ignored) {
 				command = rawMsg;
 				args = "";
 			}
-      
+
 			//NOTE(Michael): We *cannot* move this command; the blacklist command *must* be usable even while blacklisted
 			//to function as intended.
 			if (command.equals("!blacklist")) {
+				try {
 					if (args.isEmpty()) {
-						String blacklistedUsers = "";
+						StringBuilder blacklistedUsers = new StringBuilder();
 						User tmpusr;
 						JDA jda = msg.getJDA();
 						for (String user : DisConfig.blackListedUsers) {
 							tmpusr = jda.getUserById(user);
-							blacklistedUsers += tmpusr.getName() + "\n";
+							blacklistedUsers.append(tmpusr.getName()).append("\n");
 						}
-						if (blacklistedUsers.isEmpty()) {
-							blacklistedUsers = "None";
+						if (blacklistedUsers.length() == 0) {
+							blacklistedUsers = new StringBuilder("None");
 						}
 						Bot.SendMessage(msg.getChannel(), "Blacklisted Users\n----------------\n" + blacklistedUsers);
-					} else {
+					}
+					else {
 						if (!msg.getMentionedUsers().isEmpty()) {
 							User usr = msg.getMentionedUsers().get(0);
 							if (args.startsWith("add")) {
@@ -72,7 +78,8 @@ public class CommandListener extends ListenerAdapter {
 									DisConfig.blackListedUsers.add(usr.getId());
 									Bot.SendMessage(msg.getChannel(), usr.getName() + " has been added to blacklist.");
 								}
-							} else if (args.startsWith("remove")) {
+							}
+							else if (args.startsWith("remove")) {
 								if (!DisConfig.blackListedUsers.contains(usr.getId())) {
 									Bot.SendMessage(msg.getChannel(), usr.getName() + " is not blacklisted!");
 								}
@@ -80,14 +87,20 @@ public class CommandListener extends ListenerAdapter {
 									DisConfig.blackListedUsers.remove(usr.getId());
 									Bot.SendMessage(msg.getChannel(), usr.getName() + " has been removed from blacklist.");
 								}
-							} else {
+							}
+							else {
 								Bot.SendMessage(msg.getChannel(), "Usage: `!blacklist <add|remove> <MentionedUser>`");
 							}
-						} else {
+						}
+						else {
 							Bot.SendMessage(msg.getChannel(), "No user mentioned!");
 						}
 					}
-				return;
+					return;
+				}
+				catch (Exception ex) {
+					Bot.ReportStackTrace(ex, msg.getChannel());
+				}
 			}
 
 			for (String id : DisConfig.blackListedUsers) {
@@ -101,82 +114,100 @@ public class CommandListener extends ListenerAdapter {
 					Bot.SendMessage(msg.getChannel(), "Pong!");
 					break;
 				case "!featurerequest":
-					try (FileWriter fw = new FileWriter(DisConfig.outDir + "FeatureRequests.txt", true)) {
+					try (FileWriter fw = new FileWriter(DisConfig.outputDir + "FeatureRequests.txt", true)) {
 						args = args.replace("\n", " ").trim();
 						if (args.isEmpty()) {
 							throw new IllegalArgumentException();
 						}
 						fw.write(args + "|" + msg.getAuthor().getId() + "\n");
 						Bot.SendMessage(msg.getChannel(), "Submission \"" + args + "\" Received!");
-					} catch (IllegalArgumentException ex) {
+					}
+					catch (IllegalArgumentException ex) {
 						Bot.SendMessage(msg.getChannel(), "Usage: `!featurerequest <Text Containing Your Feature Request>`");
-					} catch (Exception ex) {
+					}
+					catch (Exception ex) {
 						Bot.ReportStackTrace(ex, msg.getChannel());
 					}
 					break;
 				case "!listrequests":
-					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outDir + "FeatureRequests.txt"))) {
+					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outputDir + "FeatureRequests.txt"))) {
 						Stream<String> lines = br.lines();
 						StringBuilder reply = new StringBuilder(2000);
 						List<String> requestlist = lines.collect(Collectors.toList());
 						for (int i = 1; i < requestlist.size() + 1; i++) {
-							String[] parts = requestlist.get(i-1).split("\\|");
+							String[] parts = requestlist.get(i - 1).split("\\|");
 							//NOTE(Michael): parts[0] == Content, parts[1] == Author
-							parts[1] = msg.getGuild().getMemberById(parts[1]).getEffectiveName();
-							reply.append(i).append(". ").append(parts[0])
-									.append(" -- ").append(parts[1]).append("\n");
+							parts[1] = msg.getGuild()
+							              .getMemberById(parts[1])
+							              .getEffectiveName();
+							reply.append(i)
+							     .append(". ")
+							     .append(parts[0])
+							     .append(" -- ")
+							     .append(parts[1])
+							     .append("\n");
 						}
 						//TODO(Michael): Streamline sending reply messages to commands, this just looks silly typing it all out again and again.
 						if (reply.length() == 0) {
 							Bot.SendMessage(msg.getChannel(), "There are no feature requests.");
-						} else {
+						}
+						else {
 							Bot.SendMessage(msg.getChannel(), reply.toString());
 						}
-					} catch (FileNotFoundException ex) {
+					}
+					catch (FileNotFoundException ex) {
 						Bot.SendMessage(msg.getChannel(), "No feature requests file found.");
-					} catch (Exception ex) {
+					}
+					catch (Exception ex) {
 						Bot.ReportStackTrace(ex, msg.getChannel());
 					}
 					break;
 				case "!removerequest":
 					int requestNum = Integer.parseInt(args) - 1;
 					String oldRequest;
-					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outDir + "FeatureRequests.txt"))) {
+					try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outputDir + "FeatureRequests.txt"))) {
 						Stream<String> lines = br.lines();
 						List<String> requestlist = lines.collect(Collectors.toList());
 						try {
 							oldRequest = requestlist.get(requestNum).split("\\|")[0];
 							requestlist.remove(requestNum);
-							BufferedWriter bw = new BufferedWriter(new FileWriter(DisConfig.outDir + "FeatureRequests.txt"));
+							BufferedWriter bw = new BufferedWriter(new FileWriter(DisConfig.outputDir + "FeatureRequests.txt"));
 							for (String s : requestlist) {
 								bw.write(s + "\n");
 							}
 							bw.flush();
 							bw.close();
 							Bot.SendMessage(msg.getChannel(), "Request \"" + oldRequest + "\" removed.");
-						} catch (IndexOutOfBoundsException ex) {
+						}
+						catch (IndexOutOfBoundsException ex) {
 							Bot.SendMessage(msg.getChannel(), "Invalid Request ID!");
 						}
-					} catch (FileNotFoundException ex) {
+					}
+					catch (FileNotFoundException ex) {
 						Bot.SendMessage(msg.getChannel(), "No feature requests file found.");
-					} catch (Exception ex) {
+					}
+					catch (Exception ex) {
 						Bot.ReportStackTrace(ex, msg.getChannel());
 					}
 					break;
 				case "!mackaystandard":
-					//TODO(Michael): I think there's a way to include images in embeds? might be a cool edit.
-					EmbedBuilder builder = new EmbedBuilder();
-					builder.setColor(Color.RED);
-					builder.setImage("attachment://mackaystandard.jpeg");
-					builder.setTitle("Warning");
-					builder.setDescription("If you don't follow the Mackay standard, this could be you!");
 
+					EmbedBuilder builder = new EmbedBuilder();
+					builder.setColor(Color.RED)
+					       .setImage("attachment://mackaystandard.jpeg")
+					       .setTitle("Warning")
+					       .setDescription("If you don't follow the Mackay standard, this could be you!");
 					try {
 						InputStream img = new FileInputStream("./mackaystandard.jpg");
-						msg.getChannel().sendFile(img, "mackaystandard.jpg").embed(builder.build()).queue();
-					} catch (FileNotFoundException ex) {
+						msg.getChannel()
+						   .sendFile(img, "mackaystandard.jpg") //TODO(Michael): I think there's a way to include images in embeds? might be a cool edit.
+						   .embed(builder.build())
+						   .queue();
+					}
+					catch (FileNotFoundException ex) {
 						Bot.SendMessage(msg.getChannel(), "Error:\nImage not found on server.");
-					} catch (Exception ex) {
+					}
+					catch (Exception ex) {
 						Bot.ReportStackTrace(ex, msg.getChannel());
 					}
 				default:

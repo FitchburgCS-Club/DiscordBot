@@ -2,6 +2,8 @@
 config
 featureRequests.txt
 
+#Ignore Michael's Deployment scripts
+Deploy/*
 
 # Compiled class file
 *.class
@@ -16,22 +18,11 @@ featureRequests.txt
 *.rar
 
 # IntelliJ
-
-# User-specific stuff
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/**/usage.statistics.xml
-.idea/**/dictionaries
-.idea/**/shelf
-
-# This causes lots of headache, Idea does not like anything touching this file
-.idea/**/vcs.xml
+.idea/*
 
 # Gradle
 .gradle
 /build/
-.idea/**/gradle.xml
-.idea/**/libraries
 
 # Ignore Gradle GUI config
 gradle-app.setting
