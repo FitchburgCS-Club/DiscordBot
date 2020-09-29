@@ -53,7 +53,6 @@ public class CommandListener extends ListenerAdapter {
 			//NOTE(Micahel): We *cannot* move this command; the blacklist command *must* be usable even while blacklisted
 			//to function as intended.
 			if (command.equals("!blacklist")) {
-				try {
 					if (args.equals("!blacklist")) {
 						String blacklistedUsers = "";
 						User tmpusr;
@@ -66,36 +65,32 @@ public class CommandListener extends ListenerAdapter {
 							blacklistedUsers = "None";
 						}
 						Bot.SendMessage(msg.getChannel(), "Blacklisted Users\n----------------\n" + blacklistedUsers);
-						//return;
 					} else {
-						try {
+						if (!msg.getMentionedUsers().isEmpty()) {
 							User usr = msg.getMentionedUsers().get(0);
 							if (args.startsWith("add")) {
 								if (DisConfig.blackListedUsers.contains(usr.getId())) {
 									Bot.SendMessage(msg.getChannel(), usr.getName() + " is already blacklisted!");
-									return;
 								}
-								DisConfig.blackListedUsers.add(usr.getId());
-								Bot.SendMessage(msg.getChannel(), usr.getName() + " added to blacklist.");
-								//return;
+								else {
+									DisConfig.blackListedUsers.add(usr.getId());
+									Bot.SendMessage(msg.getChannel(), usr.getName() + " has been added to blacklist.");
+								}
 							} else if (args.startsWith("remove")) {
 								if (!DisConfig.blackListedUsers.contains(usr.getId())) {
 									Bot.SendMessage(msg.getChannel(), usr.getName() + " is not blacklisted!");
-									return;
 								}
-								DisConfig.blackListedUsers.remove(usr.getId());
-								Bot.SendMessage(msg.getChannel(), usr.getName() + " removed from blacklist.");
-								//return;
+								else {
+									DisConfig.blackListedUsers.remove(usr.getId());
+									Bot.SendMessage(msg.getChannel(), usr.getName() + " has been removed from blacklist.");
+								}
 							} else {
 								Bot.SendMessage(msg.getChannel(), "Usage: `!blacklist <add|remove> <MentionedUser>`");
 							}
-						} catch (IndexOutOfBoundsException e) {
+						} else {
 							Bot.SendMessage(msg.getChannel(), "No user mentioned!");
 						}
 					}
-				} catch (Exception ex) {
-					Bot.ReportStackTrace(ex, msg.getChannel());
-				}
 				return;
 			}
 
