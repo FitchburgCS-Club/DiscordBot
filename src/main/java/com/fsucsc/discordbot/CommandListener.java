@@ -37,23 +37,19 @@ public class CommandListener extends ListenerAdapter {
 
 		if (rawMsg.startsWith("!")) {
 			String command = "";
-			try {
-				command = rawMsg.substring(0, rawMsg.indexOf(" "));
-			} catch (Exception ignored) {
-				command = rawMsg;
-			}
-
 			String args = "";
 			try {
+				command = rawMsg.substring(0, rawMsg.indexOf(" "));
 				args = rawMsg.substring(rawMsg.indexOf(" ") + 1);
 			} catch (Exception ignored) {
+				command = rawMsg;
 				args = "";
 			}
 
 			//NOTE(Micahel): We *cannot* move this command; the blacklist command *must* be usable even while blacklisted
 			//to function as intended.
 			if (command.equals("!blacklist")) {
-					if (args.equals("!blacklist")) {
+					if (args.isEmpty()) {
 						String blacklistedUsers = "";
 						User tmpusr;
 						JDA jda = msg.getJDA();
