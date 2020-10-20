@@ -3,17 +3,17 @@ package com.fsucsc.discordbot;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-import java.awt.Color;
+import java.awt.*;
 import java.io.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CommandListener extends ListenerAdapter {
-	public void onGuildMessageReceived (GuildMessageReceivedEvent event) {
+	public void onMessageReceived(MessageReceivedEvent event) {
 		Message msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
 		String rawMsg = msg.getContentRaw();
 
@@ -131,6 +131,65 @@ public class CommandListener extends ListenerAdapter {
 					}
 				default:
 					Bot.SendMessage(msg.getChannel(), "Unknown Command!");
+				case "!help":
+					// (Zack) Make sure you add any new commands you make to this list.
+					String[] cmds = {
+							"blacklist",
+							"featurerequest",
+							"help",
+							"listrequests",
+							"mackaystandard",
+							"ping"
+					};
+					String message = "";
+					if (args.compareTo("") == 0) {
+						for (String cmd : cmds) {
+							message = message.concat(cmd + "\n");
+						}
+						message = message.concat("Remember to prepend commands with \"!\"\nUse ``!help <command>`` to get specific help on a command");
+						Bot.SendMessage(msg.getChannel(), message);
+					} else {
+						switch (args.split(" ")[1]) {
+							case "blacklist":
+								Bot.SendMessage(msg.getChannel(), "blacklist:\n" +
+										"Manages the blacklist. The bot will not respond to users on the blacklist.\n" +
+										"Syntax:\n" +
+										"``!blacklist <add|remove> <user>``");
+								break;
+							case "featurerequest":
+								Bot.SendMessage(msg.getChannel(), "featurequest:\n" +
+										"Request a feature to be added to the bot.\n" +
+										"Syntax:\n" +
+										"``!featurequest <request>``");
+								break;
+							case "help":
+								Bot.SendMessage(msg.getChannel(), "help:\n" +
+										"The command that you're looking at now. XD\n" +
+										"Syntax:\n");
+								break;
+							case "listrequests":
+								Bot.SendMessage(msg.getChannel(), "listrequests:\n" +
+										"List current requests for the bot.\n" +
+										"Syntax:\n" +
+										"``!listrequests``");
+								break;
+							case "mackaystandard":
+								Bot.SendMessage(msg.getChannel(), "mackaystandard:\n" +
+										"Let's you know what happens when you don't follow Mackay Standards.\n" +
+										"Syntax:\n" +
+										"``!mackaystandard``");
+								break;
+							case "ping":
+								Bot.SendMessage(msg.getChannel(), "ping:\n" +
+										"Pings the bot, causing it to pong.\n" +
+										"Syntax:\n" +
+										"``!ping``");
+								break;
+							default:
+								Bot.SendMessage(msg.getChannel(), "Error:\nCommand nonexistent or no help is available.");
+						}
+					}
+					break;
 			}
 		}
 	}
