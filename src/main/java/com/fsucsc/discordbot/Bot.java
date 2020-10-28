@@ -68,7 +68,7 @@ public class Bot {
 		}
 
 		try {
-			new JDABuilder(AccountType.BOT).setToken(DisConfig.token)
+			JDABuilder.createDefault(DisConfig.token)
 			                               .addEventListeners(new CommandListener())
 			                               .build();
 		}
