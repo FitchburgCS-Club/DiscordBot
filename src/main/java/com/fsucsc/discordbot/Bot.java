@@ -1,6 +1,5 @@
 package com.fsucsc.discordbot;
 
-import net.dv8tion.jda.api.AccountType;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 
@@ -68,9 +67,9 @@ public class Bot {
 		}
 
 		try {
-			new JDABuilder(AccountType.BOT).setToken(DisConfig.token)
-			                               .addEventListeners(new CommandListener())
-			                               .build();
+			JDABuilder.createDefault(DisConfig.token).setToken(DisConfig.token)
+			          .addEventListeners(new CommandListener())
+			          .build();
 		}
 		catch (LoginException | IllegalArgumentException ex) {
 			System.out.println("Failed to Log in");

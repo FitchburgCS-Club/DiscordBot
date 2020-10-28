@@ -4,8 +4,10 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import org.im4java.core.ConvertCmd;
+import org.im4java.core.IMOperation;
 
 import java.awt.*;
 import java.io.*;
@@ -14,7 +16,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CommandListener extends ListenerAdapter {
-	public void onGuildMessageReceived (GuildMessageReceivedEvent event) {
+	String tmpDir = System.getProperty("java.io.tmpdir");
+	EmbedBuilder builder = new EmbedBuilder();
+	String attachmentName;
+	Message.Attachment attachment;
+
+	public void onMessageReceived (MessageReceivedEvent event) {
 		Message msg = event.getChannel()
 		                   .retrieveMessageById(event.getMessageId())
 		                   .complete();
@@ -191,8 +198,6 @@ public class CommandListener extends ListenerAdapter {
 					}
 					break;
 				case "!mackaystandard":
-
-					EmbedBuilder builder = new EmbedBuilder();
 					builder.setColor(Color.RED)
 					       .setImage("attachment://mackaystandard.jpeg")
 					       .setTitle("Warning")
@@ -210,6 +215,64 @@ public class CommandListener extends ListenerAdapter {
 					catch (Exception ex) {
 						Bot.ReportStackTrace(ex, msg.getChannel());
 					}
+				case "!blur":
+					attachment = msg.getAttachments().get(0);
+					attachmentName = attachment.getFileName();
+					if (attachment.isImage()) {
+						// (Zack) You have to use "thenAccept" to make sure the file is
+						// actually done uploading before you do more stuff
+
+						// variables used in lambdas must be final
+						final String finalArgs = args;
+						attachment.downloadToFile(tmpDir + "/" + attachmentName).thenAccept(file->{
+							try {
+								Double blurAmnt;
+								try {
+									blurAmnt = Double.parseDouble(finalArgs);
+								}
+								catch (Exception ex) {
+									Bot.SendMessage(msg.getChannel(), "Unable to parse blur amount, defaulting to '2.0'");
+									blurAmnt = 2.0;
+								}
+								ConvertCmd cmd = new ConvertCmd();
+								IMOperation op = new IMOperation();
+								op.addImage(tmpDir + "/" + attachmentName);
+								op.blur(0.0, blurAmnt);
+								op.addImage(tmpDir + "/blur_" + attachmentName);
+								cmd.run(op);
+								File f = new File(tmpDir + "/blur_" + attachmentName);
+								builder.setColor(Color.CYAN);
+								builder.setImage("attachment://blur" + attachmentName);
+								try {
+									InputStream img = new FileInputStream(tmpDir + "/blur_" + attachmentName);
+									msg.getChannel().sendFile(img, attachmentName).embed(builder.build()).queue();
+								}
+								catch (FileNotFoundException ex) {
+									Bot.SendMessage(msg.getChannel(), "Error:\nImage not found on server.");
+								}
+								catch (Exception ex) {
+									StringWriter sw = new StringWriter();
+									ex.printStackTrace(new PrintWriter(sw));
+									Bot.SendMessage(msg.getChannel(), "An unexpected exception occurred! Here's the info:\n" + sw.toString());
+								}
+								f.delete();
+							}
+							catch (Exception ex) {
+								StringWriter sw = new StringWriter();
+								ex.printStackTrace(new PrintWriter(sw));
+								Bot.SendMessage(msg.getChannel(), "Failed to convert image Here's the info:\n" + sw.toString());
+							}
+						}).exceptionally(ex->{
+							StringWriter sw = new StringWriter();
+							ex.printStackTrace(new PrintWriter(sw));
+							Bot.SendMessage(msg.getChannel(), "Failed to download image Here's the info:\n" + sw.toString());
+							return null;
+						});
+					}
+					else {
+						Bot.SendMessage(msg.getChannel(), "Error:\nEither no image was attached or attachment is not an image!");
+					}
+					break;
 				default:
 					Bot.SendMessage(msg.getChannel(), "Unknown Command!");
 			}
