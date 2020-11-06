@@ -21,6 +21,7 @@ public class Bot {
 	 * @param contents string containing the message contents
 	 */
 	static void SendMessage (MessageChannel channel, String contents) {
+		System.out.println("Sending Message: " + contents);
 		try {
 			do
 			{

@@ -2,6 +2,7 @@ package com.fsucsc.discordbot;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 import java.awt.*;
@@ -146,6 +147,55 @@ class CommandAction {
 		}
 	}
 
+	public static void blacklist (MessageReceivedEvent event, String args) {
+		try {
+			if (args.isEmpty()) {
+				StringBuilder blacklistedUsers = new StringBuilder();
+				for (String user : DisConfig.blackListedUsers) {
+					blacklistedUsers.append( event.getJDA().getUserById(user).getName() )
+						.append("\n");
+				}
+				if (blacklistedUsers.length() == 0) {
+					blacklistedUsers.append("None");
+				}
+				Bot.SendMessage(event.getChannel(), "Blacklisted Users\n----------------\n" + blacklistedUsers);
+			}
+			else {
+				if (!event.getMessage().getMentionedUsers().isEmpty()) {
+					User usr = event.getMessage().getMentionedUsers().get(0);
+					if (args.startsWith("add")) {
+						if (DisConfig.blackListedUsers.contains(usr.getId())) {
+							Bot.SendMessage(event.getChannel(), usr.getName() + " is already blacklisted!");
+						}
+						else {
+							DisConfig.blackListedUsers.add(usr.getId());
+							Bot.SendMessage(event.getChannel(), usr.getName() + " has been added to blacklist.");
+						}
+					}
+					else if (args.startsWith("remove")) {
+						if (!DisConfig.blackListedUsers.contains(usr.getId())) {
+							Bot.SendMessage(event.getChannel(), usr.getName() + " is not blacklisted!");
+						}
+						else {
+							DisConfig.blackListedUsers.remove(usr.getId());
+							Bot.SendMessage(event.getChannel(), usr.getName() + " has been removed from blacklist.");
+						}
+					}
+					else {
+						Bot.SendMessage(event.getChannel(), "Usage: `!blacklist <add|remove> <MentionedUser>`");
+					}
+				}
+				else {
+					Bot.SendMessage(event.getChannel(), "No user mentioned!");
+				}
+			}
+			return;
+		}
+		catch (Exception ex) {
+			Bot.ReportStackTrace(ex, event.getChannel());
+		}
+	}
+	
 	//TODO: test.
 	public static void help (MessageReceivedEvent event, String args) {
 		String reply = "Command \"" + args + "\" does not exist!";
@@ -180,6 +230,14 @@ public enum Command {
 	PING("ping", "",
 	     "Pings the bot, causing it to pong.",
 	     CommandAction::ping),
+
+	BLACKLIST("blacklist", "[add|remove] [MentionedUser]",
+	          "This command will prevent the bot from accepting commands from a user.\n" +
+	          "Useful for developers so they can test a local version while avoiding the current live version.\n" +
+	          "`!blacklist add` adds the mentioned user to the blacklist.\n" +
+	          "`!blacklist remove` removes the mentioned user from the blacklist.\n" +
+	          "`!blacklist` lists out the currently blacklisted users.",
+	          CommandAction::blacklist),
 
 	FEATURE_REQUEST("featureRequest", "<Request>",
 	                "Request a feature to be added to the bot.\n" +
