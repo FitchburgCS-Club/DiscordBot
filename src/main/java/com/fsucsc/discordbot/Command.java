@@ -1,7 +1,6 @@
 package com.fsucsc.discordbot;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
@@ -13,10 +12,10 @@ import java.util.stream.Stream;
 
 /**
  * This is a known as a functional interface since it only has one abstract method.
- *
+ * <p>
  * Because it is a functional interface, any method that has the same prototype as the
- * function in this interface "implments" this interface.
- *
+ * function in this interface "implements" this interface.
+ * <p>
  * That is to say, if we have a variable of this interface, we can put a function reference
  * into that variable as long as the function in question has the same prototype as ICommandAction.execute().
  */
@@ -24,7 +23,7 @@ interface ICommandAction {
 	void execute (MessageReceivedEvent event, String args);
 }
 
-/* template for new command fucntion
+/* template for new command function
 
   public static void  (MessageReceivedEvent event, String args) {
   }
@@ -32,6 +31,29 @@ interface ICommandAction {
 
 
 class CommandAction {
+	public static void help (MessageReceivedEvent event, String args) {
+		String reply = "Command \"" + args + "\" does not exist!";
+
+		if (args.isEmpty()) { //print all help
+			StringBuilder strBld = new StringBuilder(1000);
+			for (Command cmd : Command.values()) {
+				strBld.append(cmd.getHelpString())
+				      .append("\n\n");
+			}
+			reply = strBld.toString();
+		}
+		else { //print particular help
+			for (Command cmd : Command.values()) {
+				if (cmd.name.equals(args)) {
+					reply = cmd.getHelpString();
+					break; //we're done here.
+				}
+			}
+		}
+
+		Bot.SendMessage(event.getChannel(), reply);
+	}
+
 	public static void ping (MessageReceivedEvent event, String args) {
 		Bot.SendMessage(event.getChannel(), "Pong!");
 	}
@@ -63,8 +85,8 @@ class CommandAction {
 				//NOTE(Michael): parts[0] == Content, parts[1] == Author
 				parts[1] = event.getGuild()
 				                .getMemberById(parts[1])
-					            .getEffectiveName();
-				//TODO(Michael): This function will will throw a null pointer execption if the user who requested something has left the server.
+				                .getEffectiveName();
+				//TODO(Michael): This function will will throw a null pointer exception if the user who requested something has left the server.
 				//We ought to create a error handler for this.
 				reply.append(i)
 				     .append(". ")
@@ -143,8 +165,8 @@ class CommandAction {
 			if (args.isEmpty()) {
 				StringBuilder blacklistedUsers = new StringBuilder();
 				for (String user : DisConfig.blackListedUsers) {
-					blacklistedUsers.append( event.getJDA().getUserById(user).getName() )
-						.append("\n");
+					blacklistedUsers.append(event.getJDA().getUserById(user).getName())
+					                .append("\n");
 				}
 				if (blacklistedUsers.length() == 0) {
 					blacklistedUsers.append("None");
@@ -180,43 +202,25 @@ class CommandAction {
 					Bot.SendMessage(event.getChannel(), "No user mentioned!");
 				}
 			}
-			return;
 		}
 		catch (Exception ex) {
 			Bot.ReportStackTrace(ex, event.getChannel());
 		}
 	}
-	
-	public static void help (MessageReceivedEvent event, String args) {
-		String reply = "Command \"" + args + "\" does not exist!";
-
-		if (args.isEmpty()) { //print all help
-			StringBuilder strBld = new StringBuilder(1000);
-			for (Command cmd : Command.values()) {
-				strBld.append(cmd.getHelpString())
-				      .append("\n\n");
-			}
-			reply = strBld.toString();
-		}
-		else { //print particular help
-			for (Command cmd : Command.values()) {
-				if (cmd.name.equals(args)) {
-					reply = cmd.getHelpString();
-					break; //we're done here.
-				}
-			}
-		}
-
-		Bot.SendMessage(event.getChannel(), reply);
-	}
 
 	public static void dummy (MessageReceivedEvent event, String args) {
-		Bot.SendMessage(event.getChannel(), "This command doesn't exist yet!");
+		Bot.SendMessage(event, "This command doesn't exist yet!");
 	}
 }
 
 
 public enum Command {
+	HELP("help", "[CommandName]",
+	     "The command that you're looking at now. XD\n" +
+	     "Commands that have `[params]` formatted like that are optional parameters.\n" +
+	     "Commands that have `<params>` formatted like that are required parameters.",
+	     CommandAction::help),
+
 	PING("ping", "",
 	     "Pings the bot, causing it to pong.",
 	     CommandAction::ping),
@@ -231,7 +235,7 @@ public enum Command {
 
 	FEATURE_REQUEST("featureRequest", "<Request>",
 	                "Request a feature to be added to the bot.\n" +
-	                "Everything after the command name is intrepreted as part of the request.",
+	                "Everything after the command name is interpreted as part of the request.",
 	                CommandAction::featureRequest),
 
 	LIST_REQUESTS("listRequests", "",
@@ -245,18 +249,14 @@ public enum Command {
 
 	MACKAY_STANDARD("mackayStandard", "",
 	                "Let's you know what happens when you don't follow Mackay Standards.",
-	                CommandAction::mackayStandard),
-
-	HELP("help", "[CommandName]",
-	     "The command that you're looking at now. XD\n",
-	     CommandAction::help);
+	                CommandAction::mackayStandard);
 
 	static String prefix = "!";
 
-	final String name; ///Name of the Command
-	final private String params; ///The params the command takes, only used for !help
-	final private String desc; ///The desc of the command, only used for !help
-	final ICommandAction action; ///Used to call the action of the command.
+	final public String name; //Name of the Command
+	final private String params; //The params the command takes, only used for !help
+	final private String desc; //The desc of the command, only used for !help
+	final public ICommandAction action; //Used to execute the action of the command.
 
 	Command (String name, String params, String desc, ICommandAction action) {
 		this.name = name;
@@ -265,7 +265,7 @@ public enum Command {
 		this.action = action;
 	}
 
-	final String getHelpString () {
+	String getHelpString () {
 		return
 				name + ":\n" +
 				"Syntax `" + prefix + name + " " + params + "`\n" +

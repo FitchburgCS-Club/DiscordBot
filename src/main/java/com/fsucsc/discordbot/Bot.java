@@ -35,13 +35,14 @@ public class Bot {
 		}
 	}
 
-	/** Convenience overload for SendMessage
+	/**
+	 * Convenience overload for SendMessage
 	 * Will send contents to whatever channel event came from.
 	 */
-	static void SendMessage(GenericMessageEvent event, String contents) {
+	static void SendMessage (GenericMessageEvent event, String contents) {
 		SendMessage(event.getChannel(), contents);
 	}
-	
+
 
 	/**
 	 * Function that reports exceptions to a discord channel

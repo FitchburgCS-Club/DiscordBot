@@ -1,30 +1,27 @@
 package com.fsucsc.discordbot;
 
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 public class CommandListener extends ListenerAdapter {
 	public void onMessageReceived (MessageReceivedEvent event) {
 		String rawMsg = event.getMessage()
-			                 .getContentRaw();
-		
+		                     .getContentRaw();
+
 		if (DisConfig.whitelistedUserId != 0) { //if a whitelist exists, enforce it
 			if (event.getAuthor()
 			         .getIdLong() != DisConfig.whitelistedUserId) {
 				return;
 			}
 		}
-		
+
 		if (rawMsg.startsWith(Command.prefix)) {
 			String command = null;
 			String args = null;
 			try {
 				command = rawMsg.substring(Command.prefix.length(),
 				                           rawMsg.indexOf(" ", Command.prefix.length()));
-				args = rawMsg.substring(rawMsg.indexOf(" ",Command.prefix.length()) + 1);
+				args = rawMsg.substring(rawMsg.indexOf(" ", Command.prefix.length()) + 1);
 			}
 			catch (Exception ignored) {
 				command = rawMsg.substring(Command.prefix.length());
@@ -45,7 +42,7 @@ public class CommandListener extends ListenerAdapter {
 					return; //NOTE(Michael): Blacklisted users don't get past this point.
 				}
 			}
-			
+
 			for (Command cmd : Command.values()) {
 				if (cmd.name.equals(command)) {
 					cmd.action.execute(event, args);
