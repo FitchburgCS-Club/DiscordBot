@@ -12,9 +12,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * TODO(Michael): Explain why this works. Also find out why this works.
- * This interface is a nicely shaped box that we can shove function references into.
- * And that's just what we'll do!
+ * This is a known as a functional interface since it only has one abstract method.
+ *
+ * Because it is a functional interface, any method that has the same prototype as the
+ * function in this interface "implments" this interface.
+ *
+ * That is to say, if we have a variable of this interface, we can put a function reference
+ * into that variable as long as the function in question has the same prototype as ICommandAction.execute().
  */
 interface ICommandAction {
 	void execute (MessageReceivedEvent event, String args);
@@ -33,30 +37,23 @@ class CommandAction {
 	}
 
 	public static void featureRequest (MessageReceivedEvent event, String args) {
-		Message msg = event.getChannel()
-		                   .retrieveMessageById(event.getMessageId())
-		                   .complete();
-
 		try (FileWriter fw = new FileWriter(DisConfig.outputDir + "FeatureRequests.txt", true)) {
 			args = args.replace("\n", " ").trim();
 			if (args.isEmpty()) {
 				throw new IllegalArgumentException();
 			}
-			fw.write(args + "|" + msg.getAuthor().getId() + "\n");
-			Bot.SendMessage(msg.getChannel(), "Submission \"" + args + "\" Received!");
+			fw.write(args + "|" + event.getAuthor().getId() + "\n");
+			Bot.SendMessage(event, "Submission \"" + args + "\" Received!");
 		}
 		catch (IllegalArgumentException ex) {
-			Bot.SendMessage(msg.getChannel(), "Usage: `!featurerequest <Text Containing Your Feature Request>`");
+			Bot.SendMessage(event, "Usage: `!featurerequest <Text Containing Your Feature Request>`");
 		}
 		catch (Exception ex) {
-			Bot.ReportStackTrace(ex, msg.getChannel());
+			Bot.ReportStackTrace(ex, event.getChannel());
 		}
 	}
 
 	public static void listRequests (MessageReceivedEvent event, String args) {
-		Message msg = event.getChannel()
-		                   .retrieveMessageById(event.getMessageId())
-		                   .complete();
 		try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outputDir + "FeatureRequests.txt"))) {
 			Stream<String> lines = br.lines();
 			StringBuilder reply = new StringBuilder(2000);
@@ -64,10 +61,10 @@ class CommandAction {
 			for (int i = 1; i < requestlist.size() + 1; i++) {
 				String[] parts = requestlist.get(i - 1).split("\\|");
 				//NOTE(Michael): parts[0] == Content, parts[1] == Author
-				parts[1] = msg.getGuild()
-				              .getMemberById(parts[1])
-				              .getEffectiveName();
-				//TODO(Michael): This function will will throw a pointer execption if the user who requested something has left the server.
+				parts[1] = event.getGuild()
+				                .getMemberById(parts[1])
+					            .getEffectiveName();
+				//TODO(Michael): This function will will throw a null pointer execption if the user who requested something has left the server.
 				//We ought to create a error handler for this.
 				reply.append(i)
 				     .append(". ")
@@ -77,24 +74,21 @@ class CommandAction {
 				     .append("\n");
 			}
 			if (reply.length() == 0) {
-				Bot.SendMessage(msg.getChannel(), "There are no feature requests.");
+				Bot.SendMessage(event, "There are no feature requests.");
 			}
 			else {
-				Bot.SendMessage(msg.getChannel(), reply.toString());
+				Bot.SendMessage(event, reply.toString());
 			}
 		}
 		catch (FileNotFoundException ex) {
-			Bot.SendMessage(msg.getChannel(), "No feature requests file found.");
+			Bot.SendMessage(event, "No feature requests file found.");
 		}
 		catch (Exception ex) {
-			Bot.ReportStackTrace(ex, msg.getChannel());
+			Bot.ReportStackTrace(ex, event.getChannel());
 		}
 	}
 
 	public static void removeRequest (MessageReceivedEvent event, String args) {
-		Message msg = event.getChannel()
-		                   .retrieveMessageById(event.getMessageId())
-		                   .complete();
 		int requestNum = Integer.parseInt(args) - 1;
 		String oldRequest;
 		try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outputDir + "FeatureRequests.txt"))) {
@@ -109,41 +103,38 @@ class CommandAction {
 				}
 				bw.flush();
 				bw.close();
-				Bot.SendMessage(msg.getChannel(), "Request \"" + oldRequest + "\" removed.");
+				Bot.SendMessage(event, "Request \"" + oldRequest + "\" removed.");
 			}
 			catch (IndexOutOfBoundsException ex) {
-				Bot.SendMessage(msg.getChannel(), "Invalid Request index!");
+				Bot.SendMessage(event, "Invalid Request index!");
 			}
 		}
 		catch (FileNotFoundException ex) {
-			Bot.SendMessage(msg.getChannel(), "No feature requests file found.");
+			Bot.SendMessage(event, "No feature requests file found.");
 		}
 		catch (Exception ex) {
-			Bot.ReportStackTrace(ex, msg.getChannel());
+			Bot.ReportStackTrace(ex, event.getChannel());
 		}
 	}
 
 	public static void mackayStandard (MessageReceivedEvent event, String args) {
-		Message msg = event.getChannel()
-		                   .retrieveMessageById(event.getMessageId())
-		                   .complete();
 		EmbedBuilder builder = new EmbedBuilder();
 		builder.setColor(Color.RED)
 		       .setImage("attachment://mackaystandard.jpeg")
 		       .setTitle("Warning")
-		       .setDescription("If you don't follow the Mackay standard, this could be you!");
+		       .setDescription("If you don't follow the Mackay standard,, this could be you!");
 		try {
 			InputStream img = new FileInputStream("./mackaystandard.jpg");
-			msg.getChannel()
-			   .sendFile(img, "mackaystandard.jpg") //TODO(Michael): I think there's a way to include images in embeds? might be a cool edit.
-			   .embed(builder.build())
-			   .queue();
+			event.getChannel()
+			     .sendFile(img, "mackaystandard.jpg") //TODO(Michael): I think there's a way to include images in embeds? might be a cool edit.
+			     .embed(builder.build())
+			     .queue();
 		}
 		catch (FileNotFoundException ex) {
-			Bot.SendMessage(msg.getChannel(), "Error:\nImage not found on server.");
+			Bot.SendMessage(event, "Error:\nImage not found on server.");
 		}
 		catch (Exception ex) {
-			Bot.ReportStackTrace(ex, msg.getChannel());
+			Bot.ReportStackTrace(ex, event.getChannel());
 		}
 	}
 
@@ -196,7 +187,6 @@ class CommandAction {
 		}
 	}
 	
-	//TODO: test.
 	public static void help (MessageReceivedEvent event, String args) {
 		String reply = "Command \"" + args + "\" does not exist!";
 

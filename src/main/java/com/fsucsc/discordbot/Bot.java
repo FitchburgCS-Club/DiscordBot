@@ -2,6 +2,7 @@ package com.fsucsc.discordbot;
 
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.events.message.GenericMessageEvent;
 
 import javax.security.auth.login.LoginException;
 import java.io.File;
@@ -34,6 +35,14 @@ public class Bot {
 		}
 	}
 
+	/** Convenience overload for SendMessage
+	 * Will send contents to whatever channel event came from.
+	 */
+	static void SendMessage(GenericMessageEvent event, String contents) {
+		SendMessage(event.getChannel(), contents);
+	}
+	
+
 	/**
 	 * Function that reports exceptions to a discord channel
 	 *
@@ -43,6 +52,8 @@ public class Bot {
 	static void ReportStackTrace (Exception ex, MessageChannel channel) {
 		StringWriter sw = new StringWriter();
 		ex.printStackTrace(new PrintWriter(sw));
+		//TODO(Michael): Should we make a bunch of random error messages?
+		//na... only I would find that funny.
 		Bot.SendMessage(channel, "An unexpected exception occurred! You should show this to a programmer-- oh wait...\n" + sw.toString());
 	}
 
