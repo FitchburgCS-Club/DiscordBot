@@ -29,7 +29,7 @@ public class CommandListener extends ListenerAdapter {
 			}
 
 			//TODO(Michael): replace this with actual logging code.
-			//Is just this actually sufficent?
+			//Is just this actually sufficient?
 			System.out.println("Command: " + command + "\nArgs: " + args);
 
 			for (String id : DisConfig.blackListedUsers) {
@@ -46,6 +46,7 @@ public class CommandListener extends ListenerAdapter {
 			for (Command cmd : Command.values()) {
 				if (cmd.name.equals(command)) {
 					cmd.action.execute(event, args);
+					break; //we're only going to equal the name of one command
 				}
 			}
 
