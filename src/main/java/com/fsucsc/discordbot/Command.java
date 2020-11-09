@@ -1,8 +1,11 @@
 package com.fsucsc.discordbot;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import org.im4java.core.ConvertCmd;
+import org.im4java.core.IMOperation;
 
 import java.awt.*;
 import java.io.*;
@@ -208,8 +211,137 @@ class CommandAction {
 		}
 	}
 
+	public static void blur (MessageReceivedEvent event, String args) {
+		String tmpDir = System.getProperty("java.io.tmpdir");
+		EmbedBuilder builder = new EmbedBuilder();
+		String attachmentName;
+		Message.Attachment attachment;
+
+		attachment = event.getMessage().getAttachments().get(0);
+		attachmentName = attachment.getFileName();
+		if (attachment.isImage()) {
+			// (Zack) You have to use "thenAccept" to make sure the file is
+			// actually done uploading before you do more stuff
+
+			// variables used in lambdas must be final
+			final String finalArgs = args;
+			attachment.downloadToFile(tmpDir + "/" + attachmentName).thenAccept(file->{
+				try {
+					Double blurAmnt;
+					try {
+						blurAmnt = Double.parseDouble(finalArgs);
+					}
+					catch (Exception ex) {
+						blurAmnt = 2.0;
+					}
+					ConvertCmd cmd = new ConvertCmd();
+					IMOperation op = new IMOperation();
+					op.addImage(tmpDir + "/" + attachmentName);
+					op.blur(0.0, blurAmnt);
+					op.addImage(tmpDir + "/blur_" + attachmentName);
+					cmd.run(op);
+					File f = new File(tmpDir + "/blur_" + attachmentName);
+					builder.setColor(Color.CYAN);
+					builder.setImage("attachment://blur" + attachmentName);
+					try {
+						InputStream img = new FileInputStream(tmpDir + "/blur_" + attachmentName);
+						event.getChannel().sendFile(img, attachmentName).embed(builder.build()).queue();
+					}
+					catch (FileNotFoundException ex) {
+						Bot.SendMessage(event.getChannel(), "Error:\nImage not found on server.");
+					}
+					catch (Exception ex) {
+						StringWriter sw = new StringWriter();
+						ex.printStackTrace(new PrintWriter(sw));
+						Bot.SendMessage(event.getChannel(), "An unexpected exception occurred! Here's the info:\n" + sw.toString());
+					}
+					f.delete();
+				}
+				catch (Exception ex) {
+					StringWriter sw = new StringWriter();
+					ex.printStackTrace(new PrintWriter(sw));
+					Bot.SendMessage(event.getChannel(), "Failed to convert image Here's the info:\n" + sw.toString());
+				}
+			}).exceptionally(ex->{
+				StringWriter sw = new StringWriter();
+				ex.printStackTrace(new PrintWriter(sw));
+				Bot.SendMessage(event.getChannel(), "Failed to download image Here's the info:\n" + sw.toString());
+				return null;
+			});
+		}
+		else {
+			Bot.SendMessage(event.getChannel(), "Error:\nEither no image was attached or attachment is not an image!");
+		}
+	}
+
+	public static void mblur (MessageReceivedEvent event, String args) {
+		String tmpDir = System.getProperty("java.io.tmpdir");
+		EmbedBuilder builder = new EmbedBuilder();
+		String attachmentName;
+		Message.Attachment attachment;
+
+		attachment = event.getMessage().getAttachments().get(0);
+		attachmentName = attachment.getFileName();
+		if (attachment.isImage()) {
+			// (Zack) You have to use "thenAccept" to make sure the file is
+			// actually done uploading before you do more stuff
+
+			// variables used in lambdas must be final
+			final String[] finalArgs = args.split(" ");
+			attachment.downloadToFile(tmpDir + "/" + attachmentName).thenAccept(file->{
+				try {
+					Double blurAmnt;
+					Double blurAmnt2;
+					try {
+						blurAmnt = Double.parseDouble(finalArgs[0]);
+						blurAmnt2 = Double.parseDouble(finalArgs[1]);
+					}
+					catch (Exception ex) {
+						blurAmnt = 10.0;
+						blurAmnt2 = 45.0;
+					}
+					ConvertCmd cmd = new ConvertCmd();
+					IMOperation op = new IMOperation();
+					op.addImage(tmpDir + "/" + attachmentName);
+					op.motionBlur(0.0, blurAmnt, blurAmnt2);
+					op.addImage(tmpDir + "/blur_" + attachmentName);
+					cmd.run(op);
+					File f = new File(tmpDir + "/blur_" + attachmentName);
+					builder.setColor(Color.CYAN);
+					builder.setImage("attachment://blur" + attachmentName);
+					try {
+						InputStream img = new FileInputStream(tmpDir + "/blur_" + attachmentName);
+						event.getChannel().sendFile(img, attachmentName).embed(builder.build()).queue();
+					}
+					catch (FileNotFoundException ex) {
+						Bot.SendMessage(event.getChannel(), "Error:\nImage not found on server.");
+					}
+					catch (Exception ex) {
+						StringWriter sw = new StringWriter();
+						ex.printStackTrace(new PrintWriter(sw));
+						Bot.SendMessage(event.getChannel(), "An unexpected exception occurred! Here's the info:\n" + sw.toString());
+					}
+					f.delete();
+				}
+				catch (Exception ex) {
+					StringWriter sw = new StringWriter();
+					ex.printStackTrace(new PrintWriter(sw));
+					Bot.SendMessage(event.getChannel(), "Failed to convert image Here's the info:\n" + sw.toString());
+				}
+			}).exceptionally(ex->{
+				StringWriter sw = new StringWriter();
+				ex.printStackTrace(new PrintWriter(sw));
+				Bot.SendMessage(event.getChannel(), "Failed to download image Here's the info:\n" + sw.toString());
+				return null;
+			});
+		}
+		else {
+			Bot.SendMessage(event.getChannel(), "Error:\nEither no image was attached or attachment is not an image!");
+		}
+	}
+
 	public static void dummy (MessageReceivedEvent event, String args) {
-		Bot.SendMessage(event, "This command doesn't exist yet!");
+		Bot.SendMessage(event.getChannel(), "This command doesn't exist yet!");
 	}
 }
 
@@ -249,7 +381,16 @@ public enum Command {
 
 	MACKAY_STANDARD("mackayStandard", "",
 	                "Let's you know what happens when you don't follow Mackay Standards.",
-	                CommandAction::mackayStandard);
+	                CommandAction::mackayStandard),
+	BLUR("blur", "[Radius]",
+	     "Blurs an image\n" +
+	     "Attach the image to be blurred and optionally specify a radius. If none is specified, 2.0 will be used.",
+	     CommandAction::blur),
+	MBLUR("mblur", "[Radius] [Sigma]",
+	      "Motion blurs an image\n" +
+	      "Attach the image to be blurred and optionally specify a radius and sigma. If none is specified, 10 will be used for the radius and 45 will be used for sigma." +
+	      "Visit https://imagemagick.org/Usage/blur/#motion-blur for more info",
+	      CommandAction::mblur);
 
 	static String prefix = "!";
 
