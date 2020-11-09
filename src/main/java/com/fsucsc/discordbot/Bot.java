@@ -2,6 +2,7 @@ package com.fsucsc.discordbot;
 
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.events.message.GenericMessageEvent;
 
 import javax.security.auth.login.LoginException;
 import java.io.File;
@@ -21,6 +22,7 @@ public class Bot {
 	 * @param contents string containing the message contents
 	 */
 	static void SendMessage (MessageChannel channel, String contents) {
+		System.out.println("Sending Message: " + contents);
 		try {
 			do {
 				channel.sendMessage(contents.substring(0, 2000)).queue();
@@ -33,6 +35,15 @@ public class Bot {
 	}
 
 	/**
+	 * Convenience overload for SendMessage
+	 * Will send contents to whatever channel event came from.
+	 */
+	static void SendMessage (GenericMessageEvent event, String contents) {
+		SendMessage(event.getChannel(), contents);
+	}
+
+
+	/**
 	 * Function that reports exceptions to a discord channel
 	 *
 	 * @param ex the exception
@@ -41,6 +52,8 @@ public class Bot {
 	static void ReportStackTrace (Exception ex, MessageChannel channel) {
 		StringWriter sw = new StringWriter();
 		ex.printStackTrace(new PrintWriter(sw));
+		//TODO(Michael): Should we make a bunch of random error messages?
+		//na... only I would find that funny.
 		Bot.SendMessage(channel, "An unexpected exception occurred! You should show this to a programmer-- oh wait...\n" + sw.toString());
 	}
 
@@ -67,7 +80,7 @@ public class Bot {
 		}
 
 		try {
-			JDABuilder.createDefault(DisConfig.token).setToken(DisConfig.token)
+			JDABuilder.createDefault(DisConfig.token)
 			          .addEventListeners(new CommandListener())
 			          .build();
 		}
