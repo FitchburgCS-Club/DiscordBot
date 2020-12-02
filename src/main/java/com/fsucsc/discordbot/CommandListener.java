@@ -30,13 +30,13 @@ public class CommandListener extends ListenerAdapter {
 
 			//TODO(Michael): replace this with actual logging code.
 			//Is just this actually sufficient?
-			System.out.println("Command: " + command + "\nArgs: " + args);
+			System.out.println("Command: " + command + "   Args: " + args);
 
 			for (String id : DisConfig.blackListedUsers) {
 				if (event.getAuthor().getId().equals(id)) {
 					if (Command.BLACKLIST.name.equals(command)) { //Check if a blacklisted user is trying to use the blacklist.
 						System.out.println("Special Blacklist Exception.");
-						Command.BLACKLIST.action.execute(event, args);
+						Command.BLACKLIST.execute(event, args);
 					}
 
 					return; //NOTE(Michael): Blacklisted users don't get past this point.
@@ -45,7 +45,7 @@ public class CommandListener extends ListenerAdapter {
 
 			for (Command cmd : Command.values()) {
 				if (cmd.name.equals(command)) {
-					cmd.action.execute(event, args);
+					cmd.execute(event, args);
 					break; //we're only going to equal the name of one command
 				}
 			}
