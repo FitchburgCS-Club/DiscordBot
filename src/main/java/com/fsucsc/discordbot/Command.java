@@ -1,6 +1,7 @@
 package com.fsucsc.discordbot;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.im4java.core.ConvertCmd;
@@ -221,6 +222,139 @@ public enum Command {
 			}
 			catch (Exception ex) {
 				Bot.ReportStackTrace(ex, event.getChannel());
+			}
+		}
+	},
+	BLUR("blur", "[blurAmount]", "Blurs an attached image. You can optionally specify an amount for blurring. The command defaults to 2.0") {
+		@Override
+		public void execute (MessageReceivedEvent event, String args) {
+			String tmpDir = System.getProperty("java.io.tmpdir");
+			EmbedBuilder builder = new EmbedBuilder();
+			String attachmentName;
+			Message.Attachment attachment;
+
+			attachment = event.getMessage().getAttachments().get(0);
+			attachmentName = attachment.getFileName();
+			if (attachment.isImage()) {
+				// (Zack) You have to use "thenAccept" to make sure the file is
+				// actually done uploading before you do more stuff
+
+				// variables used in lambdas must be final
+				final String finalArgs = args;
+				attachment.downloadToFile(tmpDir + "/" + attachmentName).thenAccept(file->{
+					try {
+						double blurAmnt;
+						try {
+							blurAmnt = Double.parseDouble(finalArgs);
+						}
+						catch (Exception ex) {
+							blurAmnt = 2.0;
+						}
+						ConvertCmd cmd = new ConvertCmd();
+						IMOperation op = new IMOperation();
+						op.addImage(tmpDir + "/" + attachmentName);
+						op.blur(0.0, blurAmnt);
+						op.addImage(tmpDir + "/blur_" + attachmentName);
+						cmd.run(op);
+						File f = new File(tmpDir + "/blur_" + attachmentName);
+						builder.setColor(Color.CYAN);
+						builder.setImage("attachment://blur" + attachmentName);
+						try {
+							InputStream img = new FileInputStream(tmpDir + "/blur_" + attachmentName);
+							event.getChannel().sendFile(img, attachmentName).embed(builder.build()).queue();
+						}
+						catch (FileNotFoundException ex) {
+							Bot.SendMessage(event.getChannel(), "Error:\nImage not found on server.");
+						}
+						catch (Exception ex) {
+							StringWriter sw = new StringWriter();
+							ex.printStackTrace(new PrintWriter(sw));
+							Bot.SendMessage(event.getChannel(), "An unexpected exception occurred! Here's the info:\n" + sw.toString());
+						}
+						f.delete();
+					}
+					catch (Exception ex) {
+						StringWriter sw = new StringWriter();
+						ex.printStackTrace(new PrintWriter(sw));
+						Bot.SendMessage(event.getChannel(), "Failed to convert image Here's the info:\n" + sw.toString());
+					}
+				}).exceptionally(ex->{
+					StringWriter sw = new StringWriter();
+					ex.printStackTrace(new PrintWriter(sw));
+					Bot.SendMessage(event.getChannel(), "Failed to download image Here's the info:\n" + sw.toString());
+					return null;
+				});
+			}
+			else {
+				Bot.SendMessage(event.getChannel(), "Error:\nEither no image was attached or attachment is not an image!");
+			}
+		}
+	},
+	MBLUR("mblur", "[blurAmount] [blurAngle]", "Applies motion blur to an image. Defaults are 10.0 and 45.0") {
+		@Override
+		public void execute (MessageReceivedEvent event, String args) {
+			String tmpDir = System.getProperty("java.io.tmpdir");
+			EmbedBuilder builder = new EmbedBuilder();
+			String attachmentName;
+			Message.Attachment attachment;
+
+			attachment = event.getMessage().getAttachments().get(0);
+			attachmentName = attachment.getFileName();
+			if (attachment.isImage()) {
+				// (Zack) You have to use "thenAccept" to make sure the file is
+				// actually done uploading before you do more stuff
+
+				// variables used in lambdas must be final
+				final String[] finalArgs = args.split(" ");
+				attachment.downloadToFile(tmpDir + "/" + attachmentName).thenAccept(file->{
+					try {
+						double blurAmnt;
+						double blurAngle;
+						try {
+							blurAmnt = Double.parseDouble(finalArgs[0]);
+							blurAngle = Double.parseDouble(finalArgs[1]);
+						}
+						catch (Exception ex) {
+							blurAmnt = 10.0;
+							blurAngle = 45.0;
+						}
+						ConvertCmd cmd = new ConvertCmd();
+						IMOperation op = new IMOperation();
+						op.addImage(tmpDir + "/" + attachmentName);
+						op.motionBlur(0.0, blurAmnt, blurAngle);
+						op.addImage(tmpDir + "/blur_" + attachmentName);
+						cmd.run(op);
+						File f = new File(tmpDir + "/blur_" + attachmentName);
+						builder.setColor(Color.CYAN);
+						builder.setImage("attachment://blur" + attachmentName);
+						try {
+							InputStream img = new FileInputStream(tmpDir + "/blur_" + attachmentName);
+							event.getChannel().sendFile(img, attachmentName).embed(builder.build()).queue();
+						}
+						catch (FileNotFoundException ex) {
+							Bot.SendMessage(event.getChannel(), "Error:\nImage not found on server.");
+						}
+						catch (Exception ex) {
+							StringWriter sw = new StringWriter();
+							ex.printStackTrace(new PrintWriter(sw));
+							Bot.SendMessage(event.getChannel(), "An unexpected exception occurred! Here's the info:\n" + sw.toString());
+						}
+						f.delete();
+					}
+					catch (Exception ex) {
+						StringWriter sw = new StringWriter();
+						ex.printStackTrace(new PrintWriter(sw));
+						Bot.SendMessage(event.getChannel(), "Failed to convert image Here's the info:\n" + sw.toString());
+					}
+				}).exceptionally(ex->{
+					StringWriter sw = new StringWriter();
+					ex.printStackTrace(new PrintWriter(sw));
+					Bot.SendMessage(event.getChannel(), "Failed to download image Here's the info:\n" + sw.toString());
+					return null;
+				});
+			}
+			else {
+				Bot.SendMessage(event.getChannel(), "Error:\nEither no image was attached or attachment is not an image!");
 			}
 		}
 	};
