@@ -26,7 +26,7 @@ class MeetingNotif implements Runnable {
 	
 	@Override
 	public void run() {
-		Bot.SendMessage(sendChannel, "@everyone " + message);
+		Bot.SendMessage(sendChannel, "@ everyone " + message);
 	}
 }
 
@@ -245,7 +245,7 @@ public enum Command {
 	},
 
 	//Note(Michael): This command is DANGEROUS AND ARMED. if you are testing this, please change the '@everyone' in the MeetingNotif class to something else.
-	SCHEDULE_MEETING("scheduleMeeting", "<yyyy-MM-dd HH:mm> | <text>",
+	SCHEDULE_MEETING("scheduleMeeting", "<yyyy-MM-dd HH:mm> | <Text>",
 	                 "Shows a reminder when a upcoming meeting is about to begin.\n" +
 	                 "`<yyyy-MM-dd HH:mm>` refers to the date and time at which the meeting will start.\n" +
 	                 "y stands for year, M stands for month, d stands for day, H stands for hour in 24 hr format where '0' is midnight\n" +
@@ -256,16 +256,24 @@ public enum Command {
 			String strDate = args.substring(0, args.indexOf("|"));
 			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 			try {
-				Long meetingTime = df.parse(strDate).getTime();
+				long meetingTime = df.parse(strDate).getTime();
 				long curTime = new Date().getTime();
+				long meetingDelta = meetingTime - curTime;
 
-				String message = args.substring(args.indexOf("|") + 2); //Note to consume the ' ' after the pipe.
-			
-				Bot.TaskScheduler.schedule(new MeetingNotif(message, event.getChannel()), meetingTime - curTime, TimeUnit.MILLISECONDS);
+				if (meetingDelta <= 0) {
+					Bot.SendMessage(event, "The supplied date is in the past!");
+					return;
+				}
+
+				String message = args.substring(args.indexOf("|") + 2); //Note(Michael): to consume the ' ' after the pipe.
+				
+				Bot.TaskScheduler.schedule(new MeetingNotif(message, event.getChannel()), meetingDelta, TimeUnit.MILLISECONDS);
 			}
 			catch (ParseException ex) {
-				Bot.SendMessage(event, "The supplied date was invalid!");
-				//TODO(Michael): make this error message more helpful.
+				Bot.SendMessage(event, "The supplied date was invalid!\nSubmit your date in 'yyyy-MM-dd HH:mm' format");
+			}
+			catch (IndexOutOfBoundsException ex) {
+				Bot.SendMessage(event, "The `<Text>` parameter was invalid");
 			}
 			catch (Exception ex) { Bot.ReportStackTrace(ex, event.getChannel()); }
 		}
