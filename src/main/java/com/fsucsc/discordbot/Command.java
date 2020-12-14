@@ -3,15 +3,36 @@ package com.fsucsc.discordbot;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.entities.MessageChannel;
 
 import java.awt.*;
 import java.io.*;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
 import java.util.List;
+import java.util.Date;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.concurrent.TimeUnit;
+
+class MeetingNotif implements Runnable {
+	String message;
+	MessageChannel sendChannel;	
+
+	public MeetingNotif(String newMessage, MessageChannel newSendChannel) {
+		message = newMessage;
+		sendChannel = newSendChannel;
+	}
+	
+	@Override
+	public void run() {
+		Bot.SendMessage(sendChannel, "@everyone " + message);
+	}
+}
 
 public enum Command {
 	PING("ping", "",
+	     "The father of all commands.\n" +
 	     "Pings the bot, causing it to pong.") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
@@ -220,6 +241,33 @@ public enum Command {
 			catch (Exception ex) {
 				Bot.ReportStackTrace(ex, event.getChannel());
 			}
+		}
+	},
+
+	//Note(Michael): This command is DANGEROUS AND ARMED. if you are testing this, please change the '@everyone' in the MeetingNotif class to something else.
+	SCHEDULE_MEETING("scheduleMeeting", "<yyyy-MM-dd HH:mm> | <text>",
+	                 "Shows a reminder when a upcoming meeting is about to begin.\n" +
+	                 "`<yyyy-MM-dd HH:mm>` refers to the date and time at which the meeting will start.\n" +
+	                 "y stands for year, M stands for month, d stands for day, H stands for hour in 24 hr format where '0' is midnight\n" +
+	                 "m stands for minute.\n" +
+	                 "`<text>` is the text that will show when the reminder sends.") {
+		@Override
+		public void execute (MessageReceivedEvent event, String args) {
+			String strDate = args.substring(0, args.indexOf("|"));
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+			try {
+				Long meetingTime = df.parse(strDate).getTime();
+				long curTime = new Date().getTime();
+
+				String message = args.substring(args.indexOf("|") + 2); //Note to consume the ' ' after the pipe.
+			
+				Bot.TaskScheduler.schedule(new MeetingNotif(message, event.getChannel()), meetingTime - curTime, TimeUnit.MILLISECONDS);
+			}
+			catch (ParseException ex) {
+				Bot.SendMessage(event, "The supplied date was invalid!");
+				//TODO(Michael): make this error message more helpful.
+			}
+			catch (Exception ex) { Bot.ReportStackTrace(ex, event.getChannel()); }
 		}
 	};
 

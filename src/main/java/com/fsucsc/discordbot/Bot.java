@@ -9,10 +9,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.DateFormat;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import java.util.Date;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class Bot {
+	static ScheduledExecutorService TaskScheduler;
+	
 	/**
 	 * Wrapper function to simplify sending messages to a channel.
 	 * This function will automatically split up messages that are greater than
@@ -43,7 +49,6 @@ public class Bot {
 		SendMessage(event.getChannel(), contents);
 	}
 
-
 	/**
 	 * Function that reports exceptions to a discord channel
 	 *
@@ -59,8 +64,12 @@ public class Bot {
 	}
 
 	public static void main (String[] args) {
+		TaskScheduler = Executors.newScheduledThreadPool(1);
+		
 		try (Scanner scan = new Scanner(new File("config"))) {
 			DisConfig.token = scan.nextLine();
+			//TODO(Michael): Load tasks that were not completed before we shutdown last.
+			//Note(Michael): having a line for the whitelistedUserId is optional.
 			if (scan.hasNextLine()) {
 				DisConfig.whitelistedUserId = Long.parseLong(scan.nextLine());
 			}
