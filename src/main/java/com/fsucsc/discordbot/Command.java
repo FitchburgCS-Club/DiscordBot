@@ -2,8 +2,8 @@ package com.fsucsc.discordbot;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.ChannelType;
-import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
@@ -21,14 +21,14 @@ class MeetingNotif implements Runnable {
 	String message;
 	String sendChannelId; // string rep of a long
 	long notifyTime; // in miliseconds since epoch.
-	
-	private MeetingNotif(String newMessage, String newSendChannelId, long newNotifTime) {
+
+	private MeetingNotif (String newMessage, String newSendChannelId, long newNotifTime) {
 		TextChannel sendChannel = Bot.Jda.getTextChannelById(newSendChannelId);
 		if (sendChannel != null) {
 			message = newMessage;
 			sendChannelId = newSendChannelId;
 			notifyTime = newNotifTime;
-			
+
 			try (FileWriter fw = new FileWriter(DisConfig.OutputDir + "meetings.txt", true)) {
 				fw.write(toString() + "\n");
 			}
@@ -39,52 +39,51 @@ class MeetingNotif implements Runnable {
 				Bot.ReportStackTrace(Bot.Jda.getTextChannelById(newSendChannelId), ex);
 			}
 		}
-		else { throw new NullPointerException("JDA could not get the text channel from the channel id '" + newSendChannelId + "' This likely means that the channel does not exist..."); }
+		else {
+			throw new NullPointerException("JDA could not get the text channel from the channel id '" + newSendChannelId + "' This likely means that the channel does not exist...");
+		}
 	}
-	
-	public MeetingNotif(String newMessage, TextChannel sendChannel, long newNotifyTime) {
+
+	public MeetingNotif (String newMessage, TextChannel sendChannel, long newNotifyTime) {
 		this(newMessage, sendChannel.getId(), newNotifyTime);
 	}
-	
-	public static void tryToMakeFromString(String data) {
+
+	public static void tryToMakeFromString (String data) {
 		int[] pipePos = new int[3];
 		pipePos[0] = data.indexOf("|");
 		pipePos[1] = data.indexOf("|", pipePos[0] + 1);
 		pipePos[2] = data.indexOf("|", pipePos[1] + 1);
-		
+
 		long notifyTime = Long.parseLong(data.substring(pipePos[0] + 1, pipePos[1]));
 		String message = data.substring(pipePos[1] + 1, pipePos[2]);
 		String sendChannelId = data.substring(pipePos[2] + 1);
-		
+
 		long meetingDelta = notifyTime - new Date().getTime();
 		if (meetingDelta > 0) {
 			Bot.TaskScheduler.schedule(new MeetingNotif(message, sendChannelId, notifyTime), meetingDelta, TimeUnit.MILLISECONDS);
-			Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **"  + message + "** in <#" + sendChannelId + "> at **" + new Date(notifyTime).toString() + "** has been reloaded");
+			Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** in <#" + sendChannelId + "> at **" + new Date(notifyTime).toString() + "** has been reloaded");
 		}
 		else {
-			Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **"  + message + "** in <#" + sendChannelId + "> at **" + new Date(notifyTime).toString() + "** has been discarded as it's time has passed.");
+			Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** in <#" + sendChannelId + "> at **" + new Date(notifyTime).toString() + "** has been discarded as it's time has passed.");
 		}
 	}
-	
+
 	@Override
-		public String toString() {
+	public String toString () {
 		return hashCode() + "|" + notifyTime + "|" + message + "|" + sendChannelId;
 	}
-	
+
 	@Override
-		public void run() {
+	public void run () {
 		TextChannel sendChannel = Bot.Jda.getTextChannelById(sendChannelId);
 		if (sendChannel != null) {
-			
+
 			Bot.SendMessage(sendChannel, "@everyone " + message);
 			Object[] allLinesArr = null;
-			
+
 			try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.OutputDir + "meetings.txt"))) {
 				Stream<String> allLines = br.lines();
-				
-				allLines = allLines.filter( (String line) -> !line.startsWith(toString()) ); // Using startsWith just in case line contains a '\n' at the end
-				
-				
+				allLines = allLines.filter((String line)->!line.startsWith(toString())); // Using startsWith just in case line contains a '\n' at the end
 				allLinesArr = allLines.toArray();
 			}
 			catch (IOException ex) {
@@ -94,10 +93,10 @@ class MeetingNotif implements Runnable {
 			catch (Exception ex) {
 				Bot.ReportStackTrace(sendChannel, ex);
 			}
-			
+
 			try (FileWriter fw = new FileWriter(DisConfig.OutputDir + "meetings.txt")) {
 				for (Object line : allLinesArr) {
-					fw.write((String)line + "\n");
+					fw.write(line + "\n");
 				}
 			}
 			catch (IOException ex) {
@@ -114,7 +113,7 @@ class MeetingNotif implements Runnable {
 			Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
 			throw ex;
 		}
-		
+
 	}
 }
 
@@ -123,24 +122,24 @@ public enum Command {
 	     "The father of all commands.\n" +
 	     "Pings the bot, causing it to pong.") {
 		@Override
-			public void execute (MessageReceivedEvent event, String args) {
+		public void execute (MessageReceivedEvent event, String args) {
 			Bot.SendMessage(event, "Pong!");
 		}
 	},
-	
+
 	HELP("help", "[CommandName]",
 	     "The command that you're looking at now. XD\n" +
 	     "Commands that have `[params]` formatted like that are optional parameters.\n" +
 	     "Commands that have `<params>` formatted like that are required parameters.") {
 		@Override
-			public void execute (MessageReceivedEvent event, String args) {
+		public void execute (MessageReceivedEvent event, String args) {
 			String reply = "Command \"" + args + "\" does not exist!";
-			
+
 			if (args.isEmpty()) { //print all help
 				StringBuilder strBld = new StringBuilder(1000);
 				for (Command cmd : Command.values()) {
 					strBld.append(cmd.getHelpString())
-						.append("\n\n");
+					      .append("\n\n");
 				}
 				reply = strBld.toString();
 			}
@@ -155,7 +154,7 @@ public enum Command {
 			Bot.SendMessage(event.getChannel(), reply);
 		}
 	},
-	
+
 	BLACKLIST("blacklist", "[add|remove] [MentionedUser]",
 	          "This command will prevent the bot from accepting commands from a user.\n" +
 	          "Useful for developers so they can test a local version while avoiding the current live version.\n" +
@@ -163,13 +162,13 @@ public enum Command {
 	          "`!blacklist remove` removes the mentioned user from the blacklist.\n" +
 	          "`!blacklist` lists out the currently blacklisted users.") {
 		@Override
-			public void execute (MessageReceivedEvent event, String args) {
+		public void execute (MessageReceivedEvent event, String args) {
 			try {
 				if (args.isEmpty()) {
 					StringBuilder blacklistedUsers = new StringBuilder();
 					for (String user : DisConfig.BlacklistedUsers) {
 						blacklistedUsers.append(event.getJDA().getUserById(user).getName())
-							.append("\n");
+						                .append("\n");
 					}
 					if (blacklistedUsers.length() == 0) {
 						blacklistedUsers.append("None");
@@ -211,12 +210,12 @@ public enum Command {
 			}
 		}
 	},
-	
+
 	FEATURE_REQUEST("featureRequest", "<Request>",
 	                "Request a feature to be added to the bot.\n" +
 	                "Everything after the command name is interpreted as part of the request.") {
 		@Override
-			public void execute (MessageReceivedEvent event, String args) {
+		public void execute (MessageReceivedEvent event, String args) {
 			try (FileWriter fw = new FileWriter(DisConfig.OutputDir + "FeatureRequests.txt", true)) {
 				args = args.replace("\n", " ").trim();
 				if (args.isEmpty()) {
@@ -233,11 +232,11 @@ public enum Command {
 			}
 		}
 	},
-	
+
 	LIST_REQUESTS("listRequests", "",
 	              "List current requests for the bot.") {
 		@Override
-			public void execute (MessageReceivedEvent event, String args) {
+		public void execute (MessageReceivedEvent event, String args) {
 			try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.OutputDir + "FeatureRequests.txt"))) {
 				Stream<String> lines = br.lines();
 				StringBuilder reply = new StringBuilder(2000);
@@ -246,16 +245,16 @@ public enum Command {
 					String[] parts = requestlist.get(i - 1).split("\\|");
 					//NOTE(Michael): parts[0] == Content, parts[1] == Author
 					parts[1] = event.getGuild()
-						.getMemberById(parts[1])
-						.getEffectiveName();
+					                .getMemberById(parts[1])
+					                .getEffectiveName();
 					// @Robustness This function will will throw a null pointer exception if the user who requested something has left the server.
 					// We ought to create a error handler for this.
 					reply.append(i)
-						.append(". ")
-						.append(parts[0])
-						.append(" -- ")
-						.append(parts[1])
-						.append("\n");
+					     .append(". ")
+					     .append(parts[0])
+					     .append(" -- ")
+					     .append(parts[1])
+					     .append("\n");
 				}
 				if (reply.length() == 0) {
 					Bot.SendMessage(event, "There are no feature requests.");
@@ -272,12 +271,12 @@ public enum Command {
 			}
 		}
 	},
-	
+
 	REMOVE_REQUEST("removeRequest", "<Index>",
 	               "Removes a request from the feature request list\n" +
 	               "Use `!listRequests` to find the index of a feature request") {
 		@Override
-			public void execute (MessageReceivedEvent event, String args) {
+		public void execute (MessageReceivedEvent event, String args) {
 			int requestNum = Integer.parseInt(args) - 1;
 			String oldRequest;
 			try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.OutputDir + "FeatureRequests.txt"))) {
@@ -306,22 +305,22 @@ public enum Command {
 			}
 		}
 	},
-	
+
 	MACKAY_STANDARD("mackayStandard", "",
 	                "Let's you know what happens when you don't follow Mackay Standards.") {
 		@Override
-			public void execute (MessageReceivedEvent event, String args) {
+		public void execute (MessageReceivedEvent event, String args) {
 			EmbedBuilder builder = new EmbedBuilder();
 			builder.setColor(Color.RED)
-				.setImage("attachment://mackaystandard.jpeg")
-				.setTitle("Warning")
-				.setDescription("If you don't follow the Mackay standard,, this could be you!");
+			       .setImage("attachment://mackaystandard.jpeg")
+			       .setTitle("Warning")
+			       .setDescription("If you don't follow the Mackay standard,, this could be you!");
 			try {
 				InputStream img = new FileInputStream("./mackaystandard.jpg");
 				event.getChannel()
-					.sendFile(img, "mackaystandard.jpg") //TODO(Michael): I think there's a way to include images in embeds? might be a cool edit.
-					.embed(builder.build())
-					.queue();
+				     .sendFile(img, "mackaystandard.jpg") //TODO(Michael): I think there's a way to include images in embeds? might be a cool edit.
+				     .embed(builder.build())
+				     .queue();
 			}
 			catch (FileNotFoundException ex) {
 				Bot.SendMessage(event, "Error:\nImage not found on server.");
@@ -331,18 +330,18 @@ public enum Command {
 			}
 		}
 	},
-	
+
 	//Note(Michael): This command is DANGEROUS AND ARMED. if you are testing this, please change the '@everyone' in the MeetingNotif class to something else.
 	SCHEDULE_ANNOUNCEMENT("scheduleAnnouncement", "<yyyy-MM-dd HH:mm> [Channel] | <Text>",
-						  "Schedules an announcement at the spefied time.\n" +
-						  "`<yyyy-MM-dd HH:mm>` refers to the date and time at which the announcement will be shown.\n" +
-						  "y stands for year, M stands for month, d stands for day, H stands for hour in 24 hr format where '0' is midnight\n" +
-						  "m stands for minute.\n" +
-						  "[Channel] is a channel mention that spefies what channel the announcement will appear in.\n" +
-						  "`<text>` is the text that will show when the reminder sends.\n" +
-						  "This command is only applicible if used from a Text Channel in a Guild.") {
+	                      "Schedules an announcement at the spefied time.\n" +
+	                      "`<yyyy-MM-dd HH:mm>` refers to the date and time at which the announcement will be shown.\n" +
+	                      "y stands for year, M stands for month, d stands for day, H stands for hour in 24 hr format where '0' is midnight\n" +
+	                      "m stands for minute.\n" +
+	                      "[Channel] is a channel mention that spefies what channel the announcement will appear in.\n" +
+	                      "`<text>` is the text that will show when the reminder sends.\n" +
+	                      "This command is only applicible if used from a Text Channel in a Guild.") {
 		@Override
-			public void execute (MessageReceivedEvent event, String args) {
+		public void execute (MessageReceivedEvent event, String args) {
 			MessageChannel sendChannel = null;
 			boolean sendChannelSpefied = false;
 			if (!event.getMessage().getMentionedChannels().isEmpty()) {
@@ -353,27 +352,27 @@ public enum Command {
 			else {
 				sendChannel = event.getChannel();
 			}
-			
+
 			if (sendChannel.getType() == ChannelType.TEXT) { //This command is only applicible if in a guild text channel.
 				String strDate = args.substring(0, args.indexOf("|"));
-				
+
 				SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 				try {
 					long notifyTime = df.parse(strDate).getTime();
 					long curTime = new Date().getTime();
 					long notifyDelta = notifyTime - curTime;
-					
+
 					if (notifyDelta <= 0) {
 						Bot.SendMessage(event, "The supplied date is in the past!");
 						return;
 					}
-					
+
 					String message = args.substring(args.indexOf("|") + 2); //Note(Michael): to consume the ' ' after the pipe.
-					
+
 					Bot.TaskScheduler.schedule(new MeetingNotif(message, (TextChannel)sendChannel, notifyTime), notifyDelta, TimeUnit.MILLISECONDS);
-					
+
 					Bot.SendMessage(event, "Everyone will be notified at **" + strDate.trim() + "** in <#" + sendChannel.getId() + "> about **" + message + "**");
-					
+
 				}
 				catch (ParseException ex) {
 					Bot.SendMessage(event, "The supplied date was invalid!\nSubmit your date in 'yyyy-MM-dd HH:mm' format");
@@ -381,34 +380,36 @@ public enum Command {
 				catch (IndexOutOfBoundsException ex) {
 					Bot.SendMessage(event, "The `<Text>` parameter was invalid");
 				}
-				catch (Exception ex) { Bot.ReportStackTrace(event.getChannel(), ex); }
-				
+				catch (Exception ex) {
+					Bot.ReportStackTrace(event.getChannel(), ex);
+				}
+
 			}
 			else {
 				Bot.SendMessage(event, "This command is only applicible from a guild.");
 			}
 		}
 	};
-	
+
 	static String prefix = "!"; //The prefix for all commands.
-	
+
 	final public String name; //Name of the Command
 	final private String params; //The params the command takes, only used for !help
 	final private String desc; //The desc of the command, only used for !help
-	
+
 	Command (String name, String params, String desc) {
 		this.name = name;
 		this.params = params;
 		this.desc = desc;
 	}
-	
+
 	public String getHelpString () {
 		return
-			name + ":\n" +
-			"Syntax `" + prefix + name + " " + params + "`\n" +
-			desc;
+				name + ":\n" +
+				"Syntax `" + prefix + name + " " + params + "`\n" +
+				desc;
 	}
-	
+
 	/**
 	 * Represents the action a command does when it is invoked
 	 *

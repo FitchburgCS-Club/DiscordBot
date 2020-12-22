@@ -6,15 +6,15 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 public class CommandListener extends ListenerAdapter {
 	public void onMessageReceived (MessageReceivedEvent event) {
 		String rawMsg = event.getMessage()
-			.getContentRaw();
-		
+		                     .getContentRaw();
+
 		if (DisConfig.WhitelistedUserId != 0) { //if a whitelist exists, enforce it
 			if (event.getAuthor()
-				.getIdLong() != DisConfig.WhitelistedUserId) {
+			         .getIdLong() != DisConfig.WhitelistedUserId) {
 				return;
 			}
 		}
-		
+
 		if (rawMsg.startsWith(Command.prefix)) {
 			String command = null;
 			String args = null;
@@ -27,29 +27,29 @@ public class CommandListener extends ListenerAdapter {
 				command = rawMsg.substring(Command.prefix.length());
 				args = "";
 			}
-			
+
 			//TODO(Michael): replace this with actual logging code.
 			//Is just this actually sufficient?
 			System.out.println("Command: " + command + "   Args: " + args);
-			
+
 			for (String id : DisConfig.BlacklistedUsers) {
 				if (event.getAuthor().getId().equals(id)) {
 					if (Command.BLACKLIST.name.equals(command)) { //Check if a blacklisted user is trying to use the blacklist.
 						System.out.println("Special Blacklist Exception.");
 						Command.BLACKLIST.execute(event, args);
 					}
-					
+
 					return; //NOTE(Michael): Blacklisted users don't get past this point.
 				}
 			}
-			
+
 			for (Command cmd : Command.values()) {
 				if (cmd.name.equals(command)) {
 					cmd.execute(event, args);
 					break; //we're only going to equal the name of one command
 				}
 			}
-			
+
 		}
 	}
 }
