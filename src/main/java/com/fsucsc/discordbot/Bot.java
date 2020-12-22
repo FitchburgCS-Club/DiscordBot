@@ -1,23 +1,20 @@
 package com.fsucsc.discordbot;
 
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.GenericMessageEvent;
 
 import javax.security.auth.login.LoginException;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.text.DateFormat;
+import java.io.*;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class Bot {
 	static ScheduledExecutorService TaskScheduler;
+	static JDA Jda;
 	
 	/**
 	 * Wrapper function to simplify sending messages to a channel.
@@ -40,7 +37,7 @@ public class Bot {
 			channel.sendMessage(contents).queue();
 		}
 	}
-
+	
 	/**
 	 * Convenience overload for SendMessage
 	 * Will send contents to whatever channel event came from.
@@ -48,33 +45,34 @@ public class Bot {
 	static void SendMessage (GenericMessageEvent event, String contents) {
 		SendMessage(event.getChannel(), contents);
 	}
-
+	
 	/**
 	 * Function that reports exceptions to a discord channel
 	 *
-	 * @param ex the exception
 	 * @param channel the channel to send to
+	 * @param ex the exception
 	 */
-	static void ReportStackTrace (Exception ex, MessageChannel channel) {
+	static void ReportStackTrace (MessageChannel channel, Exception ex) {
 		StringWriter sw = new StringWriter();
 		ex.printStackTrace(new PrintWriter(sw));
 		//TODO(Michael): Should we make a bunch of random error messages?
-		//na... only I would find that funny.
+		//na... only I would find that funny...
 		Bot.SendMessage(channel, "An unexpected exception occurred! You should show this to a programmer-- oh wait...\n" + sw.toString());
 	}
-
+	
 	public static void main (String[] args) {
 		TaskScheduler = Executors.newScheduledThreadPool(1);
+		String errorChannelId = null;
 		
 		try (Scanner scan = new Scanner(new File("config"))) {
-			DisConfig.token = scan.nextLine();
+			DisConfig.Token = scan.nextLine();
+			errorChannelId = scan.nextLine();
 			//TODO(Michael): Load tasks that were not completed before we shutdown last.
-			//Note(Michael): having a line for the whitelistedUserId is optional.
-			if (scan.hasNextLine()) {
-				DisConfig.whitelistedUserId = Long.parseLong(scan.nextLine());
+			if (scan.hasNextLine()) { //Note(Michael): having a line for the whitelistedUserId is optional.
+				DisConfig.WhitelistedUserId = Long.parseLong(scan.nextLine());
 			}
 			else {
-				DisConfig.whitelistedUserId = 0;
+				DisConfig.WhitelistedUserId = 0;
 			}
 		}
 		catch (FileNotFoundException | NoSuchElementException ex) {
@@ -88,15 +86,38 @@ public class Bot {
 			ex.printStackTrace();
 			System.exit(-1);
 		}
-
+		
 		try {
-			JDABuilder.createDefault(DisConfig.token)
-			          .addEventListeners(new CommandListener())
-			          .build();
+			Jda = JDABuilder.createDefault(DisConfig.Token)
+				.addEventListeners(new CommandListener())
+				.build()
+				.awaitReady();
 		}
 		catch (LoginException | IllegalArgumentException ex) {
 			System.out.println("Failed to Log in");
 			System.exit(-2);
 		}
+		catch (InterruptedException ignored) {}
+		
+		if (errorChannelId != null) {
+			DisConfig.ErrorChannel = Jda.getTextChannelById(errorChannelId);
+		}
+		
+		String[] oldMeetings = null;
+		try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.OutputDir + "meetings.txt"))) {
+			oldMeetings = br.lines().toArray(String[]::new);
+			br.close();
+			new FileWriter(DisConfig.OutputDir + "meetings.txt").close(); // clears the file.
+		}
+		catch (FileNotFoundException ignored) {}
+		catch (IOException ex) {
+			Bot.SendMessage(DisConfig.ErrorChannel, "There was a reading 'meetings.txt' on startup.");
+			Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
+		}
+		
+		for (String s : oldMeetings) {
+			MeetingNotif.tryToMakeFromString(s);
+		}
+		
 	}
 }

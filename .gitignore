@@ -1,6 +1,7 @@
 # Discord Bot related files
 config
 featureRequests.txt
+meeting.txt
 
 #Ignore Michael's Deployment scripts
 Deploy/*
