@@ -110,7 +110,7 @@ public class Bot {
 			DisConfig.PrivilegedRole = Jda.getRoleById(privlagedRoleId);
 		}
 
-		String[] oldMeetings = null;
+		String[] oldMeetings = new String[0];
 		try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.OutputDir + "meetings.txt"))) {
 			oldMeetings = br.lines().toArray(String[]::new);
 			br.close();
@@ -123,7 +123,12 @@ public class Bot {
 		}
 
 		for (String s : oldMeetings) {
-			MeetingNotif.tryToMakeFromString(s);
+			try {
+				MeetingNotif.tryToMakeFromString(s);
+			}
+			catch (Exception ex) {
+				Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
+			}
 		}
 
 	}

@@ -1,10 +1,7 @@
 package com.fsucsc.discordbot;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.ChannelType;
-import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 import java.awt.*;
@@ -19,15 +16,17 @@ import java.util.stream.Stream;
 
 class MeetingNotif implements Runnable {
 	String message;
-	String sendChannelId; // string rep of a long
+	String sendChannelId; // string rep of a long.
 	long notifyTime; // in miliseconds since epoch.
+	String subcribedRoleId; // id of the role we will mention. 0 indicates that we will mention everyone.
 
-	private MeetingNotif (String newMessage, String newSendChannelId, long newNotifTime) {
+	MeetingNotif (String newMessage, String newSendChannelId, long newNotifTime, String newSubcribedRole) {
 		TextChannel sendChannel = Bot.Jda.getTextChannelById(newSendChannelId);
 		if (sendChannel != null) {
 			message = newMessage;
 			sendChannelId = newSendChannelId;
 			notifyTime = newNotifTime;
+			subcribedRoleId = newSubcribedRole;
 
 			try (FileWriter fw = new FileWriter(DisConfig.OutputDir + "meetings.txt", true)) {
 				fw.write(toString() + "\n");
@@ -44,33 +43,47 @@ class MeetingNotif implements Runnable {
 		}
 	}
 
-	public MeetingNotif (String newMessage, TextChannel sendChannel, long newNotifyTime) {
-		this(newMessage, sendChannel.getId(), newNotifyTime);
-	}
-
 	public static void tryToMakeFromString (String data) {
-		int[] pipePos = new int[3];
+		int[] pipePos = new int[4];
 		pipePos[0] = data.indexOf("|");
 		pipePos[1] = data.indexOf("|", pipePos[0] + 1);
 		pipePos[2] = data.indexOf("|", pipePos[1] + 1);
+		pipePos[3] = data.indexOf("|", pipePos[2] + 1);
 
 		long notifyTime = Long.parseLong(data.substring(pipePos[0] + 1, pipePos[1]));
 		String message = data.substring(pipePos[1] + 1, pipePos[2]);
-		String sendChannelId = data.substring(pipePos[2] + 1);
+		String sendChannelId = data.substring(pipePos[2] + 1, pipePos[3]);
+		String subscribedRole = data.substring(pipePos[3] + 1);
+
+		if (!subscribedRole.equals("0")) {
+			try {
+				Role temp = Bot.Jda.getTextChannelById(sendChannelId).getGuild().getRolesByName(subscribedRole, false).get(0);
+				if (!temp.getName().equals(subscribedRole)) {
+					Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** in <#" + sendChannelId + ">  at **" + new Date(notifyTime).toString() + "** has been discarded as the role it was directed at no longer exists.");
+					return;
+				}
+			}
+			catch (IndexOutOfBoundsException ex) {
+				Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** in <#" + sendChannelId + ">  at **" + new Date(notifyTime).toString() + "** has been discarded as the role it was directed at no longer exists.");
+				return;
+			}
+		}
 
 		long meetingDelta = notifyTime - new Date().getTime();
 		if (meetingDelta > 0) {
-			Bot.TaskScheduler.schedule(new MeetingNotif(message, sendChannelId, notifyTime), meetingDelta, TimeUnit.MILLISECONDS);
-			Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** in <#" + sendChannelId + "> at **" + new Date(notifyTime).toString() + "** has been reloaded");
+			Bot.TaskScheduler.schedule(new MeetingNotif(message, sendChannelId, notifyTime, subscribedRole), meetingDelta, TimeUnit.MILLISECONDS);
+			Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** directed to " + subscribedRole + "in <#" + sendChannelId + ">  at **" + new Date(notifyTime).toString() + "** has been reloaded");
+			return;
 		}
 		else {
-			Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** in <#" + sendChannelId + "> at **" + new Date(notifyTime).toString() + "** has been discarded as it's time has passed.");
+			Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** directed to " + subscribedRole + " in <#" + sendChannelId + "> at **" + new Date(notifyTime).toString() + "** has been discarded as it's time has passed.");
+			return;
 		}
 	}
 
 	@Override
 	public String toString () {
-		return hashCode() + "|" + notifyTime + "|" + message + "|" + sendChannelId;
+		return hashCode() + "|" + notifyTime + "|" + message + "|" + sendChannelId + "|" + subcribedRoleId;
 	}
 
 	@Override
@@ -78,20 +91,26 @@ class MeetingNotif implements Runnable {
 		TextChannel sendChannel = Bot.Jda.getTextChannelById(sendChannelId);
 		if (sendChannel != null) {
 
-			Bot.SendMessage(sendChannel, "@everyone " + message);
-			Object[] allLinesArr = null;
+			if (subcribedRoleId.equals("0")) {
+				Bot.SendMessage(sendChannel, "@ everyone " + message);
+			}
+			else {
+				Bot.SendMessage(sendChannel, "<@&" + subcribedRoleId + "> " + message);
+			}
+
+			String[] allLinesArr = new String[0];
 
 			try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.OutputDir + "meetings.txt"))) {
 				Stream<String> allLines = br.lines();
 				allLines = allLines.filter((String line)->!line.startsWith(toString())); // Using startsWith just in case line contains a '\n' at the end
-				allLinesArr = allLines.toArray();
+				allLinesArr = allLines.toArray(String[]::new);
 			}
 			catch (IOException ex) {
-				Bot.SendMessage(sendChannel, "There was an error reading/writing to '" + DisConfig.OutputDir + "meetings.txt'.");
-				Bot.SendMessage(sendChannel, "ex.toString(): " + ex.toString());
+				Bot.SendMessage(DisConfig.ErrorChannel, "There was an error reading/writing to '" + DisConfig.OutputDir + "meetings.txt'.");
+				Bot.SendMessage(DisConfig.ErrorChannel, "ex.toString(): " + ex.toString());
 			}
 			catch (Exception ex) {
-				Bot.ReportStackTrace(sendChannel, ex);
+				Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
 			}
 
 			try (FileWriter fw = new FileWriter(DisConfig.OutputDir + "meetings.txt")) {
@@ -100,16 +119,17 @@ class MeetingNotif implements Runnable {
 				}
 			}
 			catch (IOException ex) {
-				Bot.SendMessage(sendChannel, "There was an error reading/writing to '" + DisConfig.OutputDir + "meetings.txt'.");
-				Bot.SendMessage(sendChannel, "ex.toString(): " + ex.toString());
+				Bot.SendMessage(DisConfig.ErrorChannel, "There was an error reading/writing to '" + DisConfig.OutputDir + "meetings.txt'.");
+				Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
 			}
 			catch (Exception ex) {
-				Bot.ReportStackTrace(sendChannel, ex);
+				Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
 			}
 		}
 		else {
 			NullPointerException ex = new NullPointerException("JDA could not get the text channel from the channel id '" + sendChannelId + "' This likely means that the channel does not exist anymore...");
 			//reporting to ErrorChannel because we don't know what channel we should output to...
+			//reporting before thowing because when the exeception is thrown, this thread will scilently die.
 			Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
 			throw ex;
 		}
@@ -332,29 +352,46 @@ public enum Command {
 	},
 
 	//Note(Michael): This command is DANGEROUS AND ARMED. if you are testing this, please change the '@everyone' in the MeetingNotif class to something else.
-	SCHEDULE_ANNOUNCEMENT("scheduleAnnouncement", "<yyyy-MM-dd HH:mm> [Channel] | <Text>", true,
+	SCHEDULE_ANNOUNCEMENT("scheduleAnnouncement", "<yyyy-MM-dd HH:mm> [Channel] | <Text> [| <Role Name>]", true,
 	                      "Schedules an announcement at the spefied time.\n" +
 	                      "`<yyyy-MM-dd HH:mm>` refers to the date and time at which the announcement will be shown.\n" +
 	                      "y stands for year, M stands for month, d stands for day, H stands for hour in 24 hr format where '0' is midnight\n" +
 	                      "m stands for minute.\n" +
 	                      "[Channel] is a channel mention that spefies what channel the announcement will appear in.\n" +
 	                      "`<text>` is the text that will show when the reminder sends.\n" +
+	                      "`[| <Role Name>]` is the literal character '|' followed by the name of a role. DO NOT include a '@' symbol\n" +
 	                      "This command is only applicible if used from a Text Channel in a Guild.") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			MessageChannel sendChannel = null;
-			boolean sendChannelSpefied = false;
 			if (!event.getMessage().getMentionedChannels().isEmpty()) {
 				sendChannel = event.getMessage().getMentionedChannels().get(0);
 				args = args.substring(0, args.indexOf("<#")) + args.substring(args.indexOf(">") + 1);
-				sendChannelSpefied = true;
 			}
 			else {
 				sendChannel = event.getChannel();
 			}
 
 			if (sendChannel.getType() == ChannelType.TEXT) { //This command is only applicible if in a guild text channel.
-				String strDate = args.substring(0, args.indexOf("|"));
+				int[] pipePos = new int[2];
+				pipePos[0] = args.indexOf("|");
+				pipePos[1] = args.indexOf("|", pipePos[0] + 1);
+
+				String strDate = args.substring(0, pipePos[0]);
+				String mentionedRoleId = "0";
+				Role mentionedRole = null;
+				try {
+					if (pipePos[1] != -1) {
+						mentionedRole = event.getGuild()
+						                     .getRolesByName(args.substring(pipePos[1] + 2), false)
+						                     .get(0);
+						mentionedRoleId = mentionedRole.getId();
+					}
+				}
+				catch (IndexOutOfBoundsException ex) {
+					Bot.SendMessage(event, "The supplied role does not exist!");
+					return;
+				}
 
 				SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 				try {
@@ -366,12 +403,17 @@ public enum Command {
 						Bot.SendMessage(event, "The supplied date is in the past!");
 						return;
 					}
+					String message = null;
+					if (pipePos[1] == -1)
+						message = args.substring(pipePos[0] + 2); //Note(Michael): to consume the ' ' after the pipe.
+					else
+						message = args.substring(pipePos[0] + 2, pipePos[1] - 1); //Note(Michael): to consume the ' ' after and before pipes.
 
-					String message = args.substring(args.indexOf("|") + 2); //Note(Michael): to consume the ' ' after the pipe.
-
-					Bot.TaskScheduler.schedule(new MeetingNotif(message, (TextChannel)sendChannel, notifyTime), notifyDelta, TimeUnit.MILLISECONDS);
-
-					Bot.SendMessage(event, "Everyone will be notified at **" + strDate.trim() + "** in <#" + sendChannel.getId() + "> about **" + message + "**");
+					Bot.TaskScheduler.schedule(new MeetingNotif(message, sendChannel.getId(), notifyTime, mentionedRoleId), notifyDelta, TimeUnit.MILLISECONDS);
+					if (mentionedRoleId.equals("0"))
+						Bot.SendMessage(event, "Everyone will be notified at **" + strDate.trim() + "** in <#" + sendChannel.getId() + "> about **" + message + "**");
+					else
+						Bot.SendMessage(event, mentionedRole.getName() + " will be notified at **" + strDate.trim() + "** in <#" + sendChannel.getId() + "> about **" + message + "**");
 
 				}
 				catch (ParseException ex) {
