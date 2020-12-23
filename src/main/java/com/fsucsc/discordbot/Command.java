@@ -118,7 +118,7 @@ class MeetingNotif implements Runnable {
 }
 
 public enum Command {
-	PING("ping", "",
+	PING("ping", "", false,
 	     "The father of all commands.\n" +
 	     "Pings the bot, causing it to pong.") {
 		@Override
@@ -127,7 +127,7 @@ public enum Command {
 		}
 	},
 
-	HELP("help", "[CommandName]",
+	HELP("help", "[CommandName]", false,
 	     "The command that you're looking at now. XD\n" +
 	     "Commands that have `[params]` formatted like that are optional parameters.\n" +
 	     "Commands that have `<params>` formatted like that are required parameters.") {
@@ -155,7 +155,7 @@ public enum Command {
 		}
 	},
 
-	BLACKLIST("blacklist", "[add|remove] [MentionedUser]",
+	BLACKLIST("blacklist", "[add|remove] [MentionedUser]", false,
 	          "This command will prevent the bot from accepting commands from a user.\n" +
 	          "Useful for developers so they can test a local version while avoiding the current live version.\n" +
 	          "`!blacklist add` adds the mentioned user to the blacklist.\n" +
@@ -211,7 +211,7 @@ public enum Command {
 		}
 	},
 
-	FEATURE_REQUEST("featureRequest", "<Request>",
+	FEATURE_REQUEST("featureRequest", "<Request>", false,
 	                "Request a feature to be added to the bot.\n" +
 	                "Everything after the command name is interpreted as part of the request.") {
 		@Override
@@ -233,7 +233,7 @@ public enum Command {
 		}
 	},
 
-	LIST_REQUESTS("listRequests", "",
+	LIST_REQUESTS("listRequests", "", false,
 	              "List current requests for the bot.") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
@@ -272,7 +272,7 @@ public enum Command {
 		}
 	},
 
-	REMOVE_REQUEST("removeRequest", "<Index>",
+	REMOVE_REQUEST("removeRequest", "<Index>", false,
 	               "Removes a request from the feature request list\n" +
 	               "Use `!listRequests` to find the index of a feature request") {
 		@Override
@@ -306,7 +306,7 @@ public enum Command {
 		}
 	},
 
-	MACKAY_STANDARD("mackayStandard", "",
+	MACKAY_STANDARD("mackayStandard", "", false,
 	                "Let's you know what happens when you don't follow Mackay Standards.") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
@@ -332,7 +332,7 @@ public enum Command {
 	},
 
 	//Note(Michael): This command is DANGEROUS AND ARMED. if you are testing this, please change the '@everyone' in the MeetingNotif class to something else.
-	SCHEDULE_ANNOUNCEMENT("scheduleAnnouncement", "<yyyy-MM-dd HH:mm> [Channel] | <Text>",
+	SCHEDULE_ANNOUNCEMENT("scheduleAnnouncement", "<yyyy-MM-dd HH:mm> [Channel] | <Text>", true,
 	                      "Schedules an announcement at the spefied time.\n" +
 	                      "`<yyyy-MM-dd HH:mm>` refers to the date and time at which the announcement will be shown.\n" +
 	                      "y stands for year, M stands for month, d stands for day, H stands for hour in 24 hr format where '0' is midnight\n" +
@@ -393,14 +393,17 @@ public enum Command {
 
 	static String prefix = "!"; //The prefix for all commands.
 
-	final public String name; //Name of the Command
-	final private String params; //The params the command takes, only used for !help
-	final private String desc; //The desc of the command, only used for !help
+	final public String name; ///Name of the Command
+	final private String params; ///The params the command takes, only used for !help
+	final public boolean requiresPrivilegedRole; ///If this command requires the user to have elevated permissions.
+	final private String desc; ///The desc of the command, only used for !help
 
-	Command (String name, String params, String desc) {
+
+	Command (String name, String params, boolean reqPrivRole, String desc) {
 		this.name = name;
 		this.params = params;
 		this.desc = desc;
+		this.requiresPrivilegedRole = reqPrivRole;
 	}
 
 	public String getHelpString () {

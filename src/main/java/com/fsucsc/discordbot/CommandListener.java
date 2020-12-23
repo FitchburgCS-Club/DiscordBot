@@ -1,5 +1,6 @@
 package com.fsucsc.discordbot;
 
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -45,8 +46,21 @@ public class CommandListener extends ListenerAdapter {
 
 			for (Command cmd : Command.values()) {
 				if (cmd.name.equals(command)) {
-					cmd.execute(event, args);
+
+					if (cmd.requiresPrivilegedRole) {
+						Member author = event.getGuild().getMember(event.getAuthor());
+						if (author.getRoles().contains(DisConfig.PrivilegedRole)) {
+							cmd.execute(event, args);
+						}
+						else {
+							Bot.SendMessage(event, "The command **" + command + "** requires the role " + DisConfig.PrivilegedRole.getAsMention() + ".");
+						}
+					}
+					else {
+						cmd.execute(event, args);
+					}
 					break; //we're only going to equal the name of one command
+
 				}
 			}
 

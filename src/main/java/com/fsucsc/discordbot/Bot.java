@@ -63,10 +63,13 @@ public class Bot {
 	public static void main (String[] args) {
 		TaskScheduler = Executors.newScheduledThreadPool(1);
 		String errorChannelId = null;
+		String privlagedRoleId = null;
 
 		try (Scanner scan = new Scanner(new File("config"))) {
 			DisConfig.Token = scan.nextLine();
 			errorChannelId = scan.nextLine();
+			privlagedRoleId = scan.nextLine();
+
 			//TODO(Michael): Load tasks that were not completed before we shutdown last.
 			if (scan.hasNextLine()) { //Note(Michael): having a line for the whitelistedUserId is optional.
 				DisConfig.WhitelistedUserId = Long.parseLong(scan.nextLine());
@@ -101,6 +104,10 @@ public class Bot {
 
 		if (errorChannelId != null) {
 			DisConfig.ErrorChannel = Jda.getTextChannelById(errorChannelId);
+		}
+
+		if (privlagedRoleId != null) {
+			DisConfig.PrivilegedRole = Jda.getRoleById(privlagedRoleId);
 		}
 
 		String[] oldMeetings = null;

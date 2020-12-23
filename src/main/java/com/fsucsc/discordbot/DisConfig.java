@@ -1,5 +1,6 @@
 package com.fsucsc.discordbot;
 
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.util.ArrayList;
@@ -15,4 +16,5 @@ public final class DisConfig {
 	final static ArrayList<String> BlacklistedUsers = new ArrayList<>();
 
 	static TextChannel ErrorChannel = null; ///A channel to use for error reporting. Use this to report to errors when it is unclear what channel the error should be reported in.
+	public static Role PrivilegedRole;
 }
