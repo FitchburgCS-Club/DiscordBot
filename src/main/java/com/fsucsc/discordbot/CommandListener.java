@@ -1,5 +1,6 @@
 package com.fsucsc.discordbot;
 
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -8,9 +9,9 @@ public class CommandListener extends ListenerAdapter {
 		String rawMsg = event.getMessage()
 		                     .getContentRaw();
 
-		if (DisConfig.whitelistedUserId != 0) { //if a whitelist exists, enforce it
+		if (DisConfig.WhitelistedUserId != 0) { //if a whitelist exists, enforce it
 			if (event.getAuthor()
-			         .getIdLong() != DisConfig.whitelistedUserId) {
+			         .getIdLong() != DisConfig.WhitelistedUserId) {
 				return;
 			}
 		}
@@ -32,7 +33,7 @@ public class CommandListener extends ListenerAdapter {
 			//Is just this actually sufficient?
 			System.out.println("Command: " + command + "   Args: " + args);
 
-			for (String id : DisConfig.blackListedUsers) {
+			for (String id : DisConfig.BlacklistedUsers) {
 				if (event.getAuthor().getId().equals(id)) {
 					if (Command.BLACKLIST.name.equals(command)) { //Check if a blacklisted user is trying to use the blacklist.
 						System.out.println("Special Blacklist Exception.");
@@ -45,8 +46,21 @@ public class CommandListener extends ListenerAdapter {
 
 			for (Command cmd : Command.values()) {
 				if (cmd.name.equals(command)) {
-					cmd.execute(event, args);
+
+					if (cmd.requiresPrivilegedRole) {
+						Member author = event.getGuild().getMember(event.getAuthor());
+						if (author.getRoles().contains(DisConfig.PrivilegedRole)) {
+							cmd.execute(event, args);
+						}
+						else {
+							Bot.SendMessage(event, "The command **" + command + "** requires the role " + DisConfig.PrivilegedRole.getAsMention() + ".");
+						}
+					}
+					else {
+						cmd.execute(event, args);
+					}
 					break; //we're only going to equal the name of one command
+
 				}
 			}
 
