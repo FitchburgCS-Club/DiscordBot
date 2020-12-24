@@ -1,25 +1,153 @@
 package com.fsucsc.discordbot;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 import java.awt.*;
 import java.io.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+class MeetingNotif implements Runnable {
+	String message;
+	String sendChannelId; // string rep of a long.
+	long notifyTime; // in miliseconds since epoch.
+	String subcribedRoleId; // id of the role we will mention. 0 indicates that we will mention everyone.
+
+	MeetingNotif (String newMessage, String newSendChannelId, long newNotifTime, String newSubcribedRole) {
+		TextChannel sendChannel = Bot.Jda.getTextChannelById(newSendChannelId);
+		if (sendChannel != null) {
+			message = newMessage;
+			sendChannelId = newSendChannelId;
+			notifyTime = newNotifTime;
+			subcribedRoleId = newSubcribedRole;
+
+			try (FileWriter fw = new FileWriter(DisConfig.OutputDir + "meetings.txt", true)) {
+				fw.write(toString() + "\n");
+			}
+			catch (IOException ex) {
+				Bot.SendMessage(Bot.Jda.getTextChannelById(newSendChannelId), "Failed to open '" + DisConfig.OutputDir + "meetings.txt'.");
+			}
+			catch (Exception ex) {
+				Bot.ReportStackTrace(Bot.Jda.getTextChannelById(newSendChannelId), ex);
+			}
+		}
+		else {
+			throw new NullPointerException("JDA could not get the text channel from the channel id '" + newSendChannelId + "' This likely means that the channel does not exist...");
+		}
+	}
+
+	public static void tryToMakeFromString (String data) {
+		int[] pipePos = new int[4];
+		pipePos[0] = data.indexOf("|");
+		pipePos[1] = data.indexOf("|", pipePos[0] + 1);
+		pipePos[2] = data.indexOf("|", pipePos[1] + 1);
+		pipePos[3] = data.indexOf("|", pipePos[2] + 1);
+
+		long notifyTime = Long.parseLong(data.substring(pipePos[0] + 1, pipePos[1]));
+		String message = data.substring(pipePos[1] + 1, pipePos[2]);
+		String sendChannelId = data.substring(pipePos[2] + 1, pipePos[3]);
+		String subscribedRole = data.substring(pipePos[3] + 1);
+
+		if (!subscribedRole.equals("0")) {
+			try {
+				Role temp = Bot.Jda.getTextChannelById(sendChannelId).getGuild().getRolesByName(subscribedRole, false).get(0);
+				if (!temp.getName().equals(subscribedRole)) {
+					Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** in <#" + sendChannelId + ">  at **" + new Date(notifyTime).toString() + "** has been discarded as the role it was directed at no longer exists.");
+					return;
+				}
+			}
+			catch (IndexOutOfBoundsException ex) {
+				Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** in <#" + sendChannelId + ">  at **" + new Date(notifyTime).toString() + "** has been discarded as the role it was directed at no longer exists.");
+				return;
+			}
+		}
+
+		long meetingDelta = notifyTime - new Date().getTime();
+		if (meetingDelta > 0) {
+			Bot.TaskScheduler.schedule(new MeetingNotif(message, sendChannelId, notifyTime, subscribedRole), meetingDelta, TimeUnit.MILLISECONDS);
+			Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** directed to " + subscribedRole + "in <#" + sendChannelId + ">  at **" + new Date(notifyTime).toString() + "** has been reloaded");
+			return;
+		}
+		else {
+			Bot.SendMessage(DisConfig.ErrorChannel, "The old announcement **" + message + "** directed to " + subscribedRole + " in <#" + sendChannelId + "> at **" + new Date(notifyTime).toString() + "** has been discarded as it's time has passed.");
+			return;
+		}
+	}
+
+	@Override
+	public String toString () {
+		return hashCode() + "|" + notifyTime + "|" + message + "|" + sendChannelId + "|" + subcribedRoleId;
+	}
+
+	@Override
+	public void run () {
+		TextChannel sendChannel = Bot.Jda.getTextChannelById(sendChannelId);
+		if (sendChannel != null) {
+
+			if (subcribedRoleId.equals("0")) {
+				Bot.SendMessage(sendChannel, "@ everyone " + message);
+			}
+			else {
+				Bot.SendMessage(sendChannel, "<@&" + subcribedRoleId + "> " + message);
+			}
+
+			String[] allLinesArr = new String[0];
+
+			try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.OutputDir + "meetings.txt"))) {
+				Stream<String> allLines = br.lines();
+				allLines = allLines.filter((String line)->!line.startsWith(toString())); // Using startsWith just in case line contains a '\n' at the end
+				allLinesArr = allLines.toArray(String[]::new);
+			}
+			catch (IOException ex) {
+				Bot.SendMessage(DisConfig.ErrorChannel, "There was an error reading/writing to '" + DisConfig.OutputDir + "meetings.txt'.");
+				Bot.SendMessage(DisConfig.ErrorChannel, "ex.toString(): " + ex.toString());
+			}
+			catch (Exception ex) {
+				Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
+			}
+
+			try (FileWriter fw = new FileWriter(DisConfig.OutputDir + "meetings.txt")) {
+				for (Object line : allLinesArr) {
+					fw.write(line + "\n");
+				}
+			}
+			catch (IOException ex) {
+				Bot.SendMessage(DisConfig.ErrorChannel, "There was an error reading/writing to '" + DisConfig.OutputDir + "meetings.txt'.");
+				Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
+			}
+			catch (Exception ex) {
+				Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
+			}
+		}
+		else {
+			NullPointerException ex = new NullPointerException("JDA could not get the text channel from the channel id '" + sendChannelId + "' This likely means that the channel does not exist anymore...");
+			//reporting to ErrorChannel because we don't know what channel we should output to...
+			//reporting before thowing because when the exeception is thrown, this thread will scilently die.
+			Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
+			throw ex;
+		}
+
+	}
+}
+
 public enum Command {
-	PING("ping", "",
+	PING("ping", "", false,
+	     "The father of all commands.\n" +
 	     "Pings the bot, causing it to pong.") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
-			Bot.SendMessage(event.getChannel(), "Pong!");
+			Bot.SendMessage(event, "Pong!");
 		}
 	},
 
-	HELP("help", "[CommandName]",
+	HELP("help", "[CommandName]", false,
 	     "The command that you're looking at now. XD\n" +
 	     "Commands that have `[params]` formatted like that are optional parameters.\n" +
 	     "Commands that have `<params>` formatted like that are required parameters.") {
@@ -47,7 +175,7 @@ public enum Command {
 		}
 	},
 
-	BLACKLIST("blacklist", "[add|remove] [MentionedUser]",
+	BLACKLIST("blacklist", "[add|remove] [MentionedUser]", false,
 	          "This command will prevent the bot from accepting commands from a user.\n" +
 	          "Useful for developers so they can test a local version while avoiding the current live version.\n" +
 	          "`!blacklist add` adds the mentioned user to the blacklist.\n" +
@@ -58,7 +186,7 @@ public enum Command {
 			try {
 				if (args.isEmpty()) {
 					StringBuilder blacklistedUsers = new StringBuilder();
-					for (String user : DisConfig.blackListedUsers) {
+					for (String user : DisConfig.BlacklistedUsers) {
 						blacklistedUsers.append(event.getJDA().getUserById(user).getName())
 						                .append("\n");
 					}
@@ -71,20 +199,20 @@ public enum Command {
 					if (!event.getMessage().getMentionedUsers().isEmpty()) {
 						User usr = event.getMessage().getMentionedUsers().get(0);
 						if (args.startsWith("add")) {
-							if (DisConfig.blackListedUsers.contains(usr.getId())) {
+							if (DisConfig.BlacklistedUsers.contains(usr.getId())) {
 								Bot.SendMessage(event.getChannel(), usr.getName() + " is already blacklisted!");
 							}
 							else {
-								DisConfig.blackListedUsers.add(usr.getId());
+								DisConfig.BlacklistedUsers.add(usr.getId());
 								Bot.SendMessage(event.getChannel(), usr.getName() + " has been added to blacklist.");
 							}
 						}
 						else if (args.startsWith("remove")) {
-							if (!DisConfig.blackListedUsers.contains(usr.getId())) {
+							if (!DisConfig.BlacklistedUsers.contains(usr.getId())) {
 								Bot.SendMessage(event.getChannel(), usr.getName() + " is not blacklisted!");
 							}
 							else {
-								DisConfig.blackListedUsers.remove(usr.getId());
+								DisConfig.BlacklistedUsers.remove(usr.getId());
 								Bot.SendMessage(event.getChannel(), usr.getName() + " has been removed from blacklist.");
 							}
 						}
@@ -98,17 +226,17 @@ public enum Command {
 				}
 			}
 			catch (Exception ex) {
-				Bot.ReportStackTrace(ex, event.getChannel());
+				Bot.ReportStackTrace(event.getChannel(), ex);
 			}
 		}
 	},
 
-	FEATURE_REQUEST("featureRequest", "<Request>",
+	FEATURE_REQUEST("featureRequest", "<Request>", false,
 	                "Request a feature to be added to the bot.\n" +
 	                "Everything after the command name is interpreted as part of the request.") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
-			try (FileWriter fw = new FileWriter(DisConfig.outputDir + "FeatureRequests.txt", true)) {
+			try (FileWriter fw = new FileWriter(DisConfig.OutputDir + "FeatureRequests.txt", true)) {
 				args = args.replace("\n", " ").trim();
 				if (args.isEmpty()) {
 					throw new IllegalArgumentException();
@@ -120,16 +248,16 @@ public enum Command {
 				Bot.SendMessage(event, "Usage: `!featurerequest <Text Containing Your Feature Request>`");
 			}
 			catch (Exception ex) {
-				Bot.ReportStackTrace(ex, event.getChannel());
+				Bot.ReportStackTrace(event.getChannel(), ex);
 			}
 		}
 	},
 
-	LIST_REQUESTS("listRequests", "",
+	LIST_REQUESTS("listRequests", "", false,
 	              "List current requests for the bot.") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
-			try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outputDir + "FeatureRequests.txt"))) {
+			try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.OutputDir + "FeatureRequests.txt"))) {
 				Stream<String> lines = br.lines();
 				StringBuilder reply = new StringBuilder(2000);
 				List<String> requestlist = lines.collect(Collectors.toList());
@@ -139,8 +267,8 @@ public enum Command {
 					parts[1] = event.getGuild()
 					                .getMemberById(parts[1])
 					                .getEffectiveName();
-					//TODO(Michael): This function will will throw a null pointer exception if the user who requested something has left the server.
-					//We ought to create a error handler for this.
+					// @Robustness This function will will throw a null pointer exception if the user who requested something has left the server.
+					// We ought to create a error handler for this.
 					reply.append(i)
 					     .append(". ")
 					     .append(parts[0])
@@ -159,25 +287,25 @@ public enum Command {
 				Bot.SendMessage(event, "No feature requests file found.");
 			}
 			catch (Exception ex) {
-				Bot.ReportStackTrace(ex, event.getChannel());
+				Bot.ReportStackTrace(event.getChannel(), ex);
 			}
 		}
 	},
 
-	REMOVE_REQUEST("removeRequest", "<Index>",
+	REMOVE_REQUEST("removeRequest", "<Index>", false,
 	               "Removes a request from the feature request list\n" +
 	               "Use `!listRequests` to find the index of a feature request") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			int requestNum = Integer.parseInt(args) - 1;
 			String oldRequest;
-			try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.outputDir + "FeatureRequests.txt"))) {
+			try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.OutputDir + "FeatureRequests.txt"))) {
 				Stream<String> lines = br.lines();
 				List<String> requestlist = lines.collect(Collectors.toList());
 				try {
 					oldRequest = requestlist.get(requestNum).split("\\|")[0];
 					requestlist.remove(requestNum);
-					BufferedWriter bw = new BufferedWriter(new FileWriter(DisConfig.outputDir + "FeatureRequests.txt"));
+					BufferedWriter bw = new BufferedWriter(new FileWriter(DisConfig.OutputDir + "FeatureRequests.txt"));
 					for (String s : requestlist) {
 						bw.write(s + "\n");
 					}
@@ -193,12 +321,12 @@ public enum Command {
 				Bot.SendMessage(event, "No feature requests file found.");
 			}
 			catch (Exception ex) {
-				Bot.ReportStackTrace(ex, event.getChannel());
+				Bot.ReportStackTrace(event.getChannel(), ex);
 			}
 		}
 	},
 
-	MACKAY_STANDARD("mackayStandard", "",
+	MACKAY_STANDARD("mackayStandard", "", false,
 	                "Let's you know what happens when you don't follow Mackay Standards.") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
@@ -218,21 +346,106 @@ public enum Command {
 				Bot.SendMessage(event, "Error:\nImage not found on server.");
 			}
 			catch (Exception ex) {
-				Bot.ReportStackTrace(ex, event.getChannel());
+				Bot.ReportStackTrace(event.getChannel(), ex);
+			}
+		}
+	},
+
+	//Note(Michael): This command is DANGEROUS AND ARMED. if you are testing this, please change the '@everyone' in the MeetingNotif class to something else.
+	SCHEDULE_ANNOUNCEMENT("scheduleAnnouncement", "<yyyy-MM-dd HH:mm> [Channel] | <Text> [| <Role Name>]", true,
+	                      "Schedules an announcement at the spefied time.\n" +
+	                      "`<yyyy-MM-dd HH:mm>` refers to the date and time at which the announcement will be shown.\n" +
+	                      "y stands for year, M stands for month, d stands for day, H stands for hour in 24 hr format where '0' is midnight\n" +
+	                      "m stands for minute.\n" +
+	                      "[Channel] is a channel mention that spefies what channel the announcement will appear in.\n" +
+	                      "`<text>` is the text that will show when the reminder sends.\n" +
+	                      "`[| <Role Name>]` is the literal character '|' followed by the name of a role. DO NOT include a '@' symbol\n" +
+	                      "This command is only applicible if used from a Text Channel in a Guild.") {
+		@Override
+		public void execute (MessageReceivedEvent event, String args) {
+			MessageChannel sendChannel = null;
+			if (!event.getMessage().getMentionedChannels().isEmpty()) {
+				sendChannel = event.getMessage().getMentionedChannels().get(0);
+				args = args.substring(0, args.indexOf("<#")) + args.substring(args.indexOf(">") + 1);
+			}
+			else {
+				sendChannel = event.getChannel();
+			}
+
+			if (sendChannel.getType() == ChannelType.TEXT) { //This command is only applicible if in a guild text channel.
+				int[] pipePos = new int[2];
+				pipePos[0] = args.indexOf("|");
+				pipePos[1] = args.indexOf("|", pipePos[0] + 1);
+
+				String strDate = args.substring(0, pipePos[0]);
+				String mentionedRoleId = "0";
+				Role mentionedRole = null;
+				try {
+					if (pipePos[1] != -1) {
+						mentionedRole = event.getGuild()
+						                     .getRolesByName(args.substring(pipePos[1] + 2), false)
+						                     .get(0);
+						mentionedRoleId = mentionedRole.getId();
+					}
+				}
+				catch (IndexOutOfBoundsException ex) {
+					Bot.SendMessage(event, "The supplied role does not exist!");
+					return;
+				}
+
+				SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+				try {
+					long notifyTime = df.parse(strDate).getTime();
+					long curTime = new Date().getTime();
+					long notifyDelta = notifyTime - curTime;
+
+					if (notifyDelta <= 0) {
+						Bot.SendMessage(event, "The supplied date is in the past!");
+						return;
+					}
+					String message = null;
+					if (pipePos[1] == -1)
+						message = args.substring(pipePos[0] + 2); //Note(Michael): to consume the ' ' after the pipe.
+					else
+						message = args.substring(pipePos[0] + 2, pipePos[1] - 1); //Note(Michael): to consume the ' ' after and before pipes.
+
+					Bot.TaskScheduler.schedule(new MeetingNotif(message, sendChannel.getId(), notifyTime, mentionedRoleId), notifyDelta, TimeUnit.MILLISECONDS);
+					if (mentionedRoleId.equals("0"))
+						Bot.SendMessage(event, "Everyone will be notified at **" + strDate.trim() + "** in <#" + sendChannel.getId() + "> about **" + message + "**");
+					else
+						Bot.SendMessage(event, mentionedRole.getName() + " will be notified at **" + strDate.trim() + "** in <#" + sendChannel.getId() + "> about **" + message + "**");
+
+				}
+				catch (ParseException ex) {
+					Bot.SendMessage(event, "The supplied date was invalid!\nSubmit your date in 'yyyy-MM-dd HH:mm' format");
+				}
+				catch (IndexOutOfBoundsException ex) {
+					Bot.SendMessage(event, "The `<Text>` parameter was invalid");
+				}
+				catch (Exception ex) {
+					Bot.ReportStackTrace(event.getChannel(), ex);
+				}
+
+			}
+			else {
+				Bot.SendMessage(event, "This command is only applicible from a guild.");
 			}
 		}
 	};
 
 	static String prefix = "!"; //The prefix for all commands.
 
-	final public String name; //Name of the Command
-	final private String params; //The params the command takes, only used for !help
-	final private String desc; //The desc of the command, only used for !help
+	final public String name; ///Name of the Command
+	final private String params; ///The params the command takes, only used for !help
+	final public boolean requiresPrivilegedRole; ///If this command requires the user to have elevated permissions.
+	final private String desc; ///The desc of the command, only used for !help
 
-	Command (String name, String params, String desc) {
+
+	Command (String name, String params, boolean reqPrivRole, String desc) {
 		this.name = name;
 		this.params = params;
 		this.desc = desc;
+		this.requiresPrivilegedRole = reqPrivRole;
 	}
 
 	public String getHelpString () {
