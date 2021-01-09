@@ -434,11 +434,10 @@ public enum Command {
 			}
 		}
 	},
-	BLUR("blur", "[blurAmount]", "Blurs an attached image. You can optionally specify an amount for blurring. The command defaults to 2.0") {
+	BLUR("blur", "[blurAmount]", false, "Blurs an attached image. You can optionally specify an amount for blurring. The command defaults to 2.0") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			String tmpDir = System.getProperty("java.io.tmpdir");
-			EmbedBuilder builder = new EmbedBuilder();
 			String attachmentName;
 			Message.Attachment attachment;
 
@@ -455,6 +454,9 @@ public enum Command {
 						double blurAmnt;
 						try {
 							blurAmnt = Double.parseDouble(finalArgs);
+                            if(blurAmnt > 150) {
+
+                            }
 						}
 						catch (Exception ex) {
 							blurAmnt = 2.0;
@@ -466,11 +468,9 @@ public enum Command {
 						op.addImage(tmpDir + "/blur_" + attachmentName);
 						cmd.run(op);
 						File f = new File(tmpDir + "/blur_" + attachmentName);
-						builder.setColor(Color.CYAN);
-						builder.setImage("attachment://blur" + attachmentName);
 						try {
 							InputStream img = new FileInputStream(tmpDir + "/blur_" + attachmentName);
-							event.getChannel().sendFile(img, attachmentName).embed(builder.build()).queue();
+							event.getChannel().sendFile(img, attachmentName).queue();
 						}
 						catch (FileNotFoundException ex) {
 							Bot.SendMessage(event.getChannel(), "Error:\nImage not found on server.");
@@ -499,11 +499,10 @@ public enum Command {
 			}
 		}
 	},
-	MBLUR("mblur", "[blurAmount] [blurAngle]", "Applies motion blur to an image. Defaults are 10.0 and 45.0") {
+	MBLUR("mblur", "[blurAmount] [blurAngle]", false, "Applies motion blur to an image. Defaults are 10.0 and 45.0") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			String tmpDir = System.getProperty("java.io.tmpdir");
-			EmbedBuilder builder = new EmbedBuilder();
 			String attachmentName;
 			Message.Attachment attachment;
 
@@ -534,11 +533,9 @@ public enum Command {
 						op.addImage(tmpDir + "/blur_" + attachmentName);
 						cmd.run(op);
 						File f = new File(tmpDir + "/blur_" + attachmentName);
-						builder.setColor(Color.CYAN);
-						builder.setImage("attachment://blur" + attachmentName);
 						try {
 							InputStream img = new FileInputStream(tmpDir + "/blur_" + attachmentName);
-							event.getChannel().sendFile(img, attachmentName).embed(builder.build()).queue();
+							event.getChannel().sendFile(img, attachmentName).queue();
 						}
 						catch (FileNotFoundException ex) {
 							Bot.SendMessage(event.getChannel(), "Error:\nImage not found on server.");
