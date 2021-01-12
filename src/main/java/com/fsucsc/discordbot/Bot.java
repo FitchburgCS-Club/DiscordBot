@@ -56,6 +56,13 @@ public class Bot {
 		ex.printStackTrace(new PrintWriter(sw));
 		//TODO(Michael): Should we make a bunch of random error messages?
 		//na... only I would find that funny...
+
+        //TODO(Zack): No, that'd be hilarious
+        // Maybe some like
+        // Some of these 1s and 0s are mixed up
+        // Ouch, that bytes
+        // Bot's borked. Call in the nerds.
+
 		Bot.SendMessage(channel, "An unexpected exception occurred! You should show this to a programmer-- oh wait...\n" + sw.toString());
 	}
 

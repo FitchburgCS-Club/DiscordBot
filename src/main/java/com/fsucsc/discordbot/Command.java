@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.Arrays;
 
 class MeetingNotif implements Runnable {
 	String message;
@@ -338,7 +339,7 @@ public enum Command {
 			       .setTitle("Warning")
 			       .setDescription("If you don't follow the Mackay standard,, this could be you!");
 			try {
-				InputStream img = new FileInputStream("./mackaystandard.jpg");
+				InputStream img = new FileInputStream("./img/mackaystandard.jpg");
 				event.getChannel()
 				     .sendFile(img, "mackaystandard.jpg") //TODO(Michael): I think there's a way to include images in embeds? might be a cool edit.
 				     .embed(builder.build())
@@ -562,6 +563,98 @@ public enum Command {
 			else {
 				Bot.SendMessage(event.getChannel(), "Error:\nEither no image was attached or attachment is not an image!");
 			}
+		}
+	},
+	JUSTWORKS("justworks", "[type (bill|linus|steve|todd)] <caption>", false, "Lets you know what \"just works\" courtesy of either Bill Gates, Linus Torvalds, Steve Jobs or Todd Howard"){
+		@Override
+		public void execute (MessageReceivedEvent event, String args) {
+            // TODO(Zack)
+            // Split the text into lines if it becomes to wide
+            // Make a better way of centering text, the current way is garbagio
+			String tmpDir = System.getProperty("java.io.tmpdir");
+            int[] coords = {0,0};
+            String font;
+            int fontSize;
+            String[] argsa = args.split(" ");
+            String color;
+            String name = argsa[0].toLowerCase();
+            String caption = String.join(" ", Arrays.copyOfRange(argsa, 1, argsa.length));
+            float avgLtrWidth;
+            float avgLtrWidthMultiple = 0.4126f; // The average width of a letter in 11pt Arial / 11
+            int leftShift; // Amount to shift text to the left so it's centered
+
+            switch(name) {
+                case "bill":
+                    coords[0] = 360;
+                    coords[1] = 512;
+                    color = "white";
+                    fontSize = 52;
+                    avgLtrWidth = fontSize * avgLtrWidthMultiple;
+                    leftShift = Math.round((caption.length()/2) * avgLtrWidth);
+                    font = "Arial";
+                    break;
+                case "linus":
+                    coords[0] = 275;
+                    coords[1] = 375;
+                    color = "white";
+                    fontSize = 51;
+                    avgLtrWidth = fontSize * avgLtrWidthMultiple;
+                    leftShift = Math.round((caption.length()/2) * avgLtrWidth);
+                    font = "Arial";
+                    break;
+                case "steve":
+                    coords[0] = 595;
+                    coords[1] = 420;
+                    color = "white";
+                    fontSize = 45;
+                    avgLtrWidth = fontSize * avgLtrWidthMultiple;
+                    leftShift = Math.round((caption.length()/2) * avgLtrWidth);
+                    font = "Arial";
+                    break;
+                case "todd":
+                    coords[0] = 925;
+                    coords[1] = 320;
+                    color = "black";
+                    fontSize = 40;
+                    avgLtrWidth = fontSize * avgLtrWidthMultiple;
+                    leftShift = Math.round((caption.length()/2) * avgLtrWidth);
+                    font = "Arial";
+                    break;
+                default:
+                    Bot.SendMessage(event.getChannel(), "Error:\nInvalid type!");
+                    return;
+            }
+            try {
+                ConvertCmd cmd = new ConvertCmd();
+                IMOperation op = new IMOperation();
+
+                op.addImage("img/"+name+"_just_works.jpg");
+                op.fill(color);
+                op.pointsize(fontSize);
+                op.annotate(0,0,coords[0] - leftShift,coords[1],caption);
+                op.addImage(tmpDir + "/" + name + "_just_works.jpg");
+
+                cmd.run(op);
+                File f = new File(tmpDir + "/" + name + "_just_works.jpg");
+                try {
+                    InputStream img = new FileInputStream(tmpDir + "/" + name + "_just_works.jpg");
+                    event.getChannel().sendFile(img, "It Just Works.jpg").queue();
+                }
+                catch (FileNotFoundException ex) {
+                    Bot.SendMessage(event.getChannel(), "Error:\nImage not found on server.");
+                }
+                catch (Exception ex) {
+                    StringWriter sw = new StringWriter();
+                    ex.printStackTrace(new PrintWriter(sw));
+                    Bot.SendMessage(event.getChannel(), "An unexpected exception occurred! Here's the info:\n" + sw.toString());
+                }
+                f.delete();
+            } catch (FileNotFoundException ex) {
+				Bot.SendMessage(event, "Error:\nImage not found on server.");
+            } catch (Exception ex) {
+                Bot.SendMessage(event.getChannel(), "Failed to process image!");
+                Bot.ReportStackTrace(event.getChannel(), ex);
+            }
 		}
 	};
 
