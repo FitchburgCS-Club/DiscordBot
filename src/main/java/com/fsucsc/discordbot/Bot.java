@@ -52,11 +52,18 @@ public class Bot {
 	 * @param channel the channel to send to
 	 * @param ex the exception
 	 */
-	static void ReportStackTrace (MessageChannel channel, Exception ex) {
+	static void ReportStackTrace (MessageChannel channel, Throwable ex) {
 		StringWriter sw = new StringWriter();
 		ex.printStackTrace(new PrintWriter(sw));
 		//TODO(Michael): Should we make a bunch of random error messages?
 		//na... only I would find that funny...
+
+		//TODO(Zack): No, that'd be hilarious
+		// Maybe some like
+		// Some of these 1s and 0s are mixed up
+		// Ouch, that bytes
+		// Bot's borked. Call in the nerds.
+
 		Bot.SendMessage(channel, "An unexpected exception occurred! You should show this to a programmer-- oh wait...\n" + sw.toString());
 	}
 

@@ -3,11 +3,14 @@ package com.fsucsc.discordbot;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import org.im4java.core.ConvertCmd;
+import org.im4java.core.IMOperation;
 
 import java.awt.*;
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -336,7 +339,7 @@ public enum Command {
 			       .setTitle("Warning")
 			       .setDescription("If you don't follow the Mackay standard,, this could be you!");
 			try {
-				InputStream img = new FileInputStream("./mackaystandard.jpg");
+				InputStream img = new FileInputStream("./img/mackaystandard.jpg");
 				event.getChannel()
 				     .sendFile(img, "mackaystandard.jpg") //TODO(Michael): I think there's a way to include images in embeds? might be a cool edit.
 				     .embed(builder.build())
@@ -429,6 +432,222 @@ public enum Command {
 			}
 			else {
 				Bot.SendMessage(event, "This command is only applicible from a guild.");
+			}
+		}
+	},
+	BLUR("blur", "[blurAmount]", false, "Blurs an attached image. You can optionally specify an amount for blurring. The command defaults to 2.0. The max blur is 150.") {
+		@Override
+		public void execute (MessageReceivedEvent event, String args) {
+			String tmpDir = System.getProperty("java.io.tmpdir");
+			String attachmentName;
+			Message.Attachment attachment;
+
+			attachment = event.getMessage().getAttachments().get(0);
+			attachmentName = attachment.getFileName();
+			if (attachment.isImage()) {
+				// (Zack) You have to use "thenAccept" to make sure the file is
+				// actually done uploading before you do more stuff
+
+				// variables used in lambdas must be final
+				final String finalArgs = args;
+				attachment.downloadToFile(tmpDir + "/" + attachmentName).thenAccept(file->{
+					try {
+						double blurAmnt;
+						try {
+							blurAmnt = Double.parseDouble(finalArgs);
+							if (blurAmnt > 150) {
+								blurAmnt = 150;
+							}
+						}
+						catch (Exception ex) {
+							blurAmnt = 2.0;
+						}
+						ConvertCmd cmd = new ConvertCmd();
+						IMOperation op = new IMOperation();
+						op.addImage(tmpDir + "/" + attachmentName);
+						op.blur(0.0, blurAmnt);
+						op.addImage(tmpDir + "/blur_" + attachmentName);
+						cmd.run(op);
+						File f = new File(tmpDir + "/blur_" + attachmentName);
+						try {
+							InputStream img = new FileInputStream(tmpDir + "/blur_" + attachmentName);
+							event.getChannel().sendFile(img, attachmentName).queue();
+						}
+						catch (FileNotFoundException ex) {
+							Bot.SendMessage(event.getChannel(), "Error:\nImage not found on server.");
+						}
+						catch (Exception ex) {
+							Bot.ReportStackTrace(event.getChannel(), ex);
+						}
+						f.delete();
+					}
+					catch (Exception ex) {
+						Bot.ReportStackTrace(event.getChannel(), ex);
+					}
+				}).exceptionally(ex->{
+					Bot.ReportStackTrace(event.getChannel(), ex);
+					return null;
+				});
+			}
+			else {
+				Bot.SendMessage(event.getChannel(), "Error:\nEither no image was attached or attachment is not an image!");
+			}
+		}
+	},
+	MBLUR("mblur", "[blurAmount] [blurAngle]", false, "Applies motion blur to an image. Defaults are 10.0 and 45.0. The max blur is 150 and the max angle is 360") {
+		@Override
+		public void execute (MessageReceivedEvent event, String args) {
+			String tmpDir = System.getProperty("java.io.tmpdir");
+			String attachmentName;
+			Message.Attachment attachment;
+
+			attachment = event.getMessage().getAttachments().get(0);
+			attachmentName = attachment.getFileName();
+			if (attachment.isImage()) {
+				// (Zack) You have to use "thenAccept" to make sure the file is
+				// actually done uploading before you do more stuff
+
+				// variables used in lambdas must be final
+				final String[] finalArgs = args.split(" ");
+				attachment.downloadToFile(tmpDir + "/" + attachmentName).thenAccept(file->{
+					try {
+						double blurAmnt;
+						double blurAngle;
+						try {
+							blurAmnt = Double.parseDouble(finalArgs[0]);
+							blurAngle = Double.parseDouble(finalArgs[1]);
+							if (blurAmnt > 150) {
+								blurAmnt = 150;
+							}
+							if (blurAngle > 360) {
+								blurAngle = 360;
+							}
+						}
+						catch (Exception ex) {
+							blurAmnt = 10.0;
+							blurAngle = 45.0;
+						}
+						ConvertCmd cmd = new ConvertCmd();
+						IMOperation op = new IMOperation();
+						op.addImage(tmpDir + "/" + attachmentName);
+						op.motionBlur(0.0, blurAmnt, blurAngle);
+						op.addImage(tmpDir + "/blur_" + attachmentName);
+						cmd.run(op);
+						File f = new File(tmpDir + "/blur_" + attachmentName);
+						try {
+							InputStream img = new FileInputStream(tmpDir + "/blur_" + attachmentName);
+							event.getChannel().sendFile(img, attachmentName).queue();
+						}
+						catch (FileNotFoundException ex) {
+							Bot.SendMessage(event.getChannel(), "Error:\nImage not found on server.");
+						}
+						catch (Exception ex) {
+							Bot.ReportStackTrace(event.getChannel(), ex);
+						}
+						f.delete();
+					}
+					catch (Exception ex) {
+						Bot.ReportStackTrace(event.getChannel(), ex);
+					}
+				}).exceptionally(ex->{
+					Bot.ReportStackTrace(event.getChannel(), ex);
+					return null;
+				});
+			}
+			else {
+				Bot.SendMessage(event.getChannel(), "Error:\nEither no image was attached or attachment is not an image!");
+			}
+		}
+	},
+	JUSTWORKS("justworks", "[type (bill|linus|steve|todd)] <caption>", false, "Lets you know what \"just works\" courtesy of either Bill Gates, Linus Torvalds, Steve Jobs or Todd Howard") {
+		@Override
+		public void execute (MessageReceivedEvent event, String args) {
+			// TODO(Zack)
+			// Split the text into lines if it becomes to wide
+			// Make a better way of centering text, the current way is garbagio
+			String tmpDir = System.getProperty("java.io.tmpdir");
+			int[] coords = {0, 0};
+			String font;
+			int fontSize;
+			String[] argsa = args.split(" ");
+			String color;
+			String name = argsa[0].toLowerCase();
+			String caption = String.join(" ", Arrays.copyOfRange(argsa, 1, argsa.length));
+			float avgLtrWidth;
+			float avgLtrWidthMultiple = 0.4126f; // The average width of a letter in 11pt Arial / 11
+			int leftShift; // Amount to shift text to the left so it's centered
+
+			switch (name) {
+				case "bill":
+					coords[0] = 360;
+					coords[1] = 512;
+					color = "white";
+					fontSize = 52;
+					avgLtrWidth = fontSize * avgLtrWidthMultiple;
+					leftShift = Math.round((caption.length() / 2) * avgLtrWidth);
+					font = "Arial";
+					break;
+				case "linus":
+					coords[0] = 275;
+					coords[1] = 375;
+					color = "white";
+					fontSize = 51;
+					avgLtrWidth = fontSize * avgLtrWidthMultiple;
+					leftShift = Math.round((caption.length() / 2) * avgLtrWidth);
+					font = "Arial";
+					break;
+				case "steve":
+					coords[0] = 595;
+					coords[1] = 420;
+					color = "white";
+					fontSize = 45;
+					avgLtrWidth = fontSize * avgLtrWidthMultiple;
+					leftShift = Math.round((caption.length() / 2) * avgLtrWidth);
+					font = "Arial";
+					break;
+				case "todd":
+					coords[0] = 925;
+					coords[1] = 320;
+					color = "black";
+					fontSize = 40;
+					avgLtrWidth = fontSize * avgLtrWidthMultiple;
+					leftShift = Math.round((caption.length() / 2) * avgLtrWidth);
+					font = "Arial";
+					break;
+				default:
+					Bot.SendMessage(event.getChannel(), "Error:\nInvalid type!");
+					return;
+			}
+			try {
+				ConvertCmd cmd = new ConvertCmd();
+				IMOperation op = new IMOperation();
+
+				op.addImage("img/" + name + "_just_works.jpg");
+				op.fill(color);
+				op.pointsize(fontSize);
+				op.annotate(0, 0, coords[0] - leftShift, coords[1], caption);
+				op.addImage(tmpDir + "/" + name + "_just_works.jpg");
+
+				cmd.run(op);
+				File f = new File(tmpDir + "/" + name + "_just_works.jpg");
+				try {
+					InputStream img = new FileInputStream(tmpDir + "/" + name + "_just_works.jpg");
+					event.getChannel().sendFile(img, "It Just Works.jpg").queue();
+				}
+				catch (FileNotFoundException ex) {
+					Bot.SendMessage(event.getChannel(), "Error:\nImage not found on server.");
+				}
+				catch (Exception ex) {
+					Bot.ReportStackTrace(event.getChannel(), ex);
+				}
+				f.delete();
+			}
+			catch (FileNotFoundException ex) {
+				Bot.SendMessage(event, "Error:\nImage not found on server.");
+			}
+			catch (Exception ex) {
+				Bot.SendMessage(event.getChannel(), "Failed to process image!");
+				Bot.ReportStackTrace(event.getChannel(), ex);
 			}
 		}
 	};
