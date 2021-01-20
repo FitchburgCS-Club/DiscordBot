@@ -27,7 +27,8 @@ public class Bot {
 	static void SendMessage (MessageChannel channel, String contents) {
 		System.out.println("Sending Message: " + contents);
 		try {
-			do {
+			do
+			{
 				channel.sendMessage(contents.substring(0, 2000)).queue();
 				contents = contents.substring(2000);
 			} while (contents.length() > 2000);
@@ -57,11 +58,11 @@ public class Bot {
 		//TODO(Michael): Should we make a bunch of random error messages?
 		//na... only I would find that funny...
 
-        //TODO(Zack): No, that'd be hilarious
-        // Maybe some like
-        // Some of these 1s and 0s are mixed up
-        // Ouch, that bytes
-        // Bot's borked. Call in the nerds.
+		//TODO(Zack): No, that'd be hilarious
+		// Maybe some like
+		// Some of these 1s and 0s are mixed up
+		// Ouch, that bytes
+		// Bot's borked. Call in the nerds.
 
 		Bot.SendMessage(channel, "An unexpected exception occurred! You should show this to a programmer-- oh wait...\n" + sw.toString());
 	}
