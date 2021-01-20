@@ -435,7 +435,7 @@ public enum Command {
 			}
 		}
 	},
-	BLUR("blur", "[blurAmount]", false, "Blurs an attached image. You can optionally specify an amount for blurring. The command defaults to 2.0") {
+	BLUR("blur", "[blurAmount]", false, "Blurs an attached image. You can optionally specify an amount for blurring. The command defaults to 2.0. The max blur is 150.") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			String tmpDir = System.getProperty("java.io.tmpdir");
@@ -456,7 +456,7 @@ public enum Command {
 						try {
 							blurAmnt = Double.parseDouble(finalArgs);
                             if(blurAmnt > 150) {
-
+                                blurAmnt = 150;
                             }
 						}
 						catch (Exception ex) {
@@ -500,7 +500,7 @@ public enum Command {
 			}
 		}
 	},
-	MBLUR("mblur", "[blurAmount] [blurAngle]", false, "Applies motion blur to an image. Defaults are 10.0 and 45.0") {
+	MBLUR("mblur", "[blurAmount] [blurAngle]", false, "Applies motion blur to an image. Defaults are 10.0 and 45.0. The max blur is 150 and the max angle is 360") {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			String tmpDir = System.getProperty("java.io.tmpdir");
@@ -522,6 +522,12 @@ public enum Command {
 						try {
 							blurAmnt = Double.parseDouble(finalArgs[0]);
 							blurAngle = Double.parseDouble(finalArgs[1]);
+                            if(blurAmnt > 150) {
+                                blurAmnt = 150;
+                            }
+                            if(blurAngle > 360) {
+                                blurAngle = 360;
+                            }
 						}
 						catch (Exception ex) {
 							blurAmnt = 10.0;
