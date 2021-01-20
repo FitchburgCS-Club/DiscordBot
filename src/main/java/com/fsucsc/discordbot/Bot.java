@@ -52,7 +52,7 @@ public class Bot {
 	 * @param channel the channel to send to
 	 * @param ex the exception
 	 */
-	static void ReportStackTrace (MessageChannel channel, Exception ex) {
+	static void ReportStackTrace (MessageChannel channel, Throwable ex) {
 		StringWriter sw = new StringWriter();
 		ex.printStackTrace(new PrintWriter(sw));
 		//TODO(Michael): Should we make a bunch of random error messages?

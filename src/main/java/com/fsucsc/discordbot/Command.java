@@ -485,7 +485,7 @@ public enum Command {
 						Bot.ReportStackTrace(event.getChannel(), ex);
 					}
 				}).exceptionally(ex->{
-					Bot.ReportStackTrace(event.getChannel(), (Exception)ex);
+					Bot.ReportStackTrace(event.getChannel(), ex);
 					return null;
 				});
 			}
@@ -550,7 +550,7 @@ public enum Command {
 						Bot.ReportStackTrace(event.getChannel(), ex);
 					}
 				}).exceptionally(ex->{
-					Bot.ReportStackTrace(event.getChannel(), (Exception)ex);
+					Bot.ReportStackTrace(event.getChannel(), ex);
 					return null;
 				});
 			}
