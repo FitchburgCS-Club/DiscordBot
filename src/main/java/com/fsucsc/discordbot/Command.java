@@ -163,10 +163,17 @@ public enum Command {
 			String reply = "Command \"" + args + "\" does not exist!";
 
 			if (args.isEmpty()) { //print all help
-				StringBuilder strBld = new StringBuilder(1000);
+				StringBuilder strBld = new StringBuilder(2000);
 				for (Command cmd : Command.values()) {
-					strBld.append(cmd.getHelpString())
-					      .append("\n");
+					if (strBld.length() + cmd.getHelpString().length() > 2000) {
+						Bot.SendMessage(event, strBld.toString()); // send message earily, so we don't split up this message in the middle of a help string.
+						strBld = new StringBuilder(2000);
+						strBld.append("_ _\n"); // We have to put some textual content so that discord doesn't trim this whitespace
+					}
+					else {
+						strBld.append(cmd.getHelpString())
+						      .append("\n");
+					}
 				}
 				reply = strBld.toString();
 			}
