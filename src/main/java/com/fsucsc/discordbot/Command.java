@@ -20,16 +20,16 @@ import java.util.stream.Stream;
 class MeetingNotif implements Runnable {
 	String message;
 	String sendChannelId; // string rep of a long.
-	long notifyTime; // in miliseconds since epoch.
-	String subcribedRoleId; // id of the role we will mention. 0 indicates that we will mention everyone.
+	long notifyTime; // in milliseconds since epoch.
+	String subscribedRoleId; // id of the role we will mention. 0 indicates that we will mention everyone.
 
-	MeetingNotif (String newMessage, String newSendChannelId, long newNotifTime, String newSubcribedRole) {
+	MeetingNotif (String newMessage, String newSendChannelId, long newNotifTime, String newSubscribedRole) {
 		TextChannel sendChannel = Bot.Jda.getTextChannelById(newSendChannelId);
 		if (sendChannel != null) {
 			message = newMessage;
 			sendChannelId = newSendChannelId;
 			notifyTime = newNotifTime;
-			subcribedRoleId = newSubcribedRole;
+			subscribedRoleId = newSubscribedRole;
 
 			try (FileWriter fw = new FileWriter(DisConfig.OutputDir + "meetings.txt", true)) {
 				fw.write(toString() + "\n");
@@ -86,7 +86,7 @@ class MeetingNotif implements Runnable {
 
 	@Override
 	public String toString () {
-		return hashCode() + "|" + notifyTime + "|" + message + "|" + sendChannelId + "|" + subcribedRoleId;
+		return hashCode() + "|" + notifyTime + "|" + message + "|" + sendChannelId + "|" + subscribedRoleId;
 	}
 
 	@Override
@@ -94,11 +94,11 @@ class MeetingNotif implements Runnable {
 		TextChannel sendChannel = Bot.Jda.getTextChannelById(sendChannelId);
 		if (sendChannel != null) {
 
-			if (subcribedRoleId.equals("0")) {
+			if (subscribedRoleId.equals("0")) {
 				Bot.SendMessage(sendChannel, "@ everyone " + message);
 			}
 			else {
-				Bot.SendMessage(sendChannel, "<@&" + subcribedRoleId + "> " + message);
+				Bot.SendMessage(sendChannel, "<@&" + subscribedRoleId + "> " + message);
 			}
 
 			String[] allLinesArr = new String[0];
@@ -132,7 +132,7 @@ class MeetingNotif implements Runnable {
 		else {
 			NullPointerException ex = new NullPointerException("JDA could not get the text channel from the channel id '" + sendChannelId + "' This likely means that the channel does not exist anymore...");
 			//reporting to ErrorChannel because we don't know what channel we should output to...
-			//reporting before thowing because when the exeception is thrown, this thread will scilently die.
+			//reporting before throwing because when the exception is thrown, this thread will silently die.
 			Bot.ReportStackTrace(DisConfig.ErrorChannel, ex);
 			throw ex;
 		}
@@ -142,8 +142,10 @@ class MeetingNotif implements Runnable {
 
 public enum Command {
 	PING("ping", "", false,
-	     "The father of all commands.\n" +
-	     "Pings the bot, causing it to pong.") {
+	     """
+	     The father of all commands.
+	     Pings the bot, causing it to pong.
+	     """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			Bot.SendMessage(event, "Pong!");
@@ -151,9 +153,11 @@ public enum Command {
 	},
 
 	HELP("help", "[CommandName]", false,
-	     "The command that you're looking at now. XD\n" +
-	     "Commands that have `[params]` formatted like that are optional parameters.\n" +
-	     "Commands that have `<params>` formatted like that are required parameters.") {
+	     """
+	     The command that you're looking at now. XD
+	     Commands that have `[params]` formatted like that are optional parameters.
+	     Commands that have `<params>` formatted like that are required parameters.
+	     """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			String reply = "Command \"" + args + "\" does not exist!";
@@ -162,7 +166,7 @@ public enum Command {
 				StringBuilder strBld = new StringBuilder(1000);
 				for (Command cmd : Command.values()) {
 					strBld.append(cmd.getHelpString())
-					      .append("\n\n");
+					      .append("\n");
 				}
 				reply = strBld.toString();
 			}
@@ -179,11 +183,13 @@ public enum Command {
 	},
 
 	BLACKLIST("blacklist", "[add|remove] [MentionedUser]", false,
-	          "This command will prevent the bot from accepting commands from a user.\n" +
-	          "Useful for developers so they can test a local version while avoiding the current live version.\n" +
-	          "`!blacklist add` adds the mentioned user to the blacklist.\n" +
-	          "`!blacklist remove` removes the mentioned user from the blacklist.\n" +
-	          "`!blacklist` lists out the currently blacklisted users.") {
+	          """
+	          This command will prevent the bot from accepting commands from a user.
+	          Useful for developers so they can test a local version while avoiding the current live version.
+	          `!blacklist add` adds the mentioned user to the blacklist.
+	          `!blacklist remove` removes the mentioned user from the blacklist.
+	          `!blacklist` lists out the currently blacklisted users.
+	          """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			try {
@@ -235,8 +241,10 @@ public enum Command {
 	},
 
 	FEATURE_REQUEST("featureRequest", "<Request>", false,
-	                "Request a feature to be added to the bot.\n" +
-	                "Everything after the command name is interpreted as part of the request.") {
+	                """
+	                Request a feature to be added to the bot.
+	                Everything after the command name is interpreted as part of the request.
+	                """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			try (FileWriter fw = new FileWriter(DisConfig.OutputDir + "FeatureRequests.txt", true)) {
@@ -257,7 +265,9 @@ public enum Command {
 	},
 
 	LIST_REQUESTS("listRequests", "", false,
-	              "List current requests for the bot.") {
+	              """
+	              List current requests for the bot.
+	              """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			try (BufferedReader br = new BufferedReader(new FileReader(DisConfig.OutputDir + "FeatureRequests.txt"))) {
@@ -296,8 +306,10 @@ public enum Command {
 	},
 
 	REMOVE_REQUEST("removeRequest", "<Index>", false,
-	               "Removes a request from the feature request list\n" +
-	               "Use `!listRequests` to find the index of a feature request") {
+	               """
+	               Removes a request from the feature request list
+	               Use `!listRequests` to find the index of a feature request
+	               """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			int requestNum = Integer.parseInt(args) - 1;
@@ -330,7 +342,9 @@ public enum Command {
 	},
 
 	MACKAY_STANDARD("mackayStandard", "", false,
-	                "Let's you know what happens when you don't follow Mackay Standards.") {
+	                """
+	                Let's you know what happens when you don't follow Mackay Standards.
+	                """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			EmbedBuilder builder = new EmbedBuilder();
@@ -356,14 +370,15 @@ public enum Command {
 
 	//Note(Michael): This command is DANGEROUS AND ARMED. if you are testing this, please change the '@everyone' in the MeetingNotif class to something else.
 	SCHEDULE_ANNOUNCEMENT("scheduleAnnouncement", "<yyyy-MM-dd HH:mm> [Channel] | <Text> [| <Role Name>]", true,
-	                      "Schedules an announcement at the spefied time.\n" +
-	                      "`<yyyy-MM-dd HH:mm>` refers to the date and time at which the announcement will be shown.\n" +
-	                      "y stands for year, M stands for month, d stands for day, H stands for hour in 24 hr format where '0' is midnight\n" +
-	                      "m stands for minute.\n" +
-	                      "[Channel] is a channel mention that spefies what channel the announcement will appear in.\n" +
-	                      "`<text>` is the text that will show when the reminder sends.\n" +
-	                      "`[| <Role Name>]` is the literal character '|' followed by the name of a role. DO NOT include a '@' symbol\n" +
-	                      "This command is only applicible if used from a Text Channel in a Guild.") {
+	                      """
+	                      Schedules an announcement at the specified time.
+	                      `<yyyy-MM-dd HH:mm>` refers to the date and time at which the announcement will be shown.
+	                      y stands for year, M stands for month, d stands for day, H stands for hour in 24 hr format where '0' is midnight, and m stands for minute.
+	                      [Channel] is a channel mention that specifies what channel the announcement will appear in.
+	                      `<text>` is the text that will show when the reminder sends.
+	                      `[| <Role Name>]` is the literal character '|' followed by the name of a role. DO NOT include a '@' symbol
+	                      This command is only applicable if used from a Text Channel in a Guild.
+	                      """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			MessageChannel sendChannel = null;
@@ -375,7 +390,7 @@ public enum Command {
 				sendChannel = event.getChannel();
 			}
 
-			if (sendChannel.getType() == ChannelType.TEXT) { //This command is only applicible if in a guild text channel.
+			if (sendChannel.getType() == ChannelType.TEXT) { //This command is only applicable if in a guild text channel.
 				int[] pipePos = new int[2];
 				pipePos[0] = args.indexOf("|");
 				pipePos[1] = args.indexOf("|", pipePos[0] + 1);
@@ -431,11 +446,15 @@ public enum Command {
 
 			}
 			else {
-				Bot.SendMessage(event, "This command is only applicible from a guild.");
+				Bot.SendMessage(event, "This command is only applicable from a guild.");
 			}
 		}
 	},
-	BLUR("blur", "[blurAmount]", false, "Blurs an attached image. You can optionally specify an amount for blurring. The command defaults to 2.0. The max blur is 150.") {
+	BLUR("blur", "[blurAmount]", false,
+	     """
+	     Blurs the attached image.
+	     You can optionally specify an amount for blurring. The command defaults to 2.0. The max blur is 150.
+	     """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			String tmpDir = System.getProperty("java.io.tmpdir");
@@ -494,7 +513,12 @@ public enum Command {
 			}
 		}
 	},
-	MBLUR("mblur", "[blurAmount] [blurAngle]", false, "Applies motion blur to an image. Defaults are 10.0 and 45.0. The max blur is 150 and the max angle is 360") {
+	MBLUR("mblur", "[blurAmount] [blurAngle]", false,
+	      """
+	      Applies motion blur the attached image.
+	      blurAmount defaults to `10.0`. It's max value is `150.0`.
+	      blurAngle defaults to `45.0`. It's max value is `360.0`.
+	      """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			String tmpDir = System.getProperty("java.io.tmpdir");
@@ -559,7 +583,10 @@ public enum Command {
 			}
 		}
 	},
-	JUSTWORKS("justworks", "[type (bill|linus|steve|todd)] <caption>", false, "Lets you know what \"just works\" courtesy of either Bill Gates, Linus Torvalds, Steve Jobs or Todd Howard") {
+	JUSTWORKS("justworks", "[type (bill|linus|steve|todd)] <caption>", false,
+	          """
+	          Lets you know what "just works" courtesy of either Bill Gates, Linus Torvalds, Steve Jobs or Todd Howard
+	          """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			// TODO(Zack)

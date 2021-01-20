@@ -6,7 +6,7 @@ plugins {
 group 'com.fsucsc.discordbot'
 version '1.0-SNAPSHOT'
 
-sourceCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_15
 
 repositories {
     mavenCentral()

@@ -27,11 +27,12 @@ public class Bot {
 	static void SendMessage (MessageChannel channel, String contents) {
 		System.out.println("Sending Message: " + contents);
 		try {
-			do
-			{
+			// @Improvement we should split on a word, or maybe even a line of text?
+			// Don't count on this function's splitting, it's better to do it yourself.
+			while (true) {
 				channel.sendMessage(contents.substring(0, 2000)).queue();
 				contents = contents.substring(2000);
-			} while (contents.length() > 2000);
+			}
 		}
 		catch (IndexOutOfBoundsException e) {
 			channel.sendMessage(contents).queue();
