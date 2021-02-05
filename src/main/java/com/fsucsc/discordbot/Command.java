@@ -684,6 +684,37 @@ public enum Command {
 				Bot.ReportStackTrace(event.getChannel(), ex);
 			}
 		}
+	},
+	GETVERSION("getVersion", "", false,
+	           "Gives the Git commit hash of the currently running version of the bot.") {
+		@Override
+		public void execute (MessageReceivedEvent event, String args) {
+			try {
+				java.io.File file = new java.io.File("/usr/share/discordbot/FSUCSC-Discord-Bot.jar");
+				java.util.jar.JarFile jar = new java.util.jar.JarFile(file);
+				java.util.jar.Manifest manifest = jar.getManifest();
+
+				String versionNumber = "";
+				java.util.jar.Attributes attributes = manifest.getMainAttributes();
+				if (attributes != null) {
+					java.util.Iterator it = attributes.keySet().iterator();
+					while (it.hasNext()) {
+						java.util.jar.Attributes.Name key = (java.util.jar.Attributes.Name)it.next();
+						String keyword = key.toString();
+						if (keyword.equals("Implementation-Version") || keyword.equals("Bundle-Version")) {
+							versionNumber = (String)attributes.get(key);
+							break;
+						}
+					}
+				}
+				jar.close();
+				Bot.SendMessage(event.getChannel(), versionNumber);
+			}
+			catch (IOException ex) {
+				Bot.SendMessage(event.getChannel(), "Failed to read jar file.");
+				Bot.ReportStackTrace(event.getChannel(), ex);
+			}
+		}
 	};
 
 	static String prefix = "!"; //The prefix for all commands.

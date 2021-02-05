@@ -4,7 +4,13 @@ plugins {
 }
 
 group 'com.fsucsc.discordbot'
-version '1.0-SNAPSHOT'
+/*
+Sets manifest version to first 8 chars of commit hash
+It first reads .git/HEAD to determine the branch (even though deployed versions should almost always be on master), and gets something like
+ref: refs/heads/master
+It splits by space to grab the filename and opens that to grab the hash
+*/
+version rootProject.file(".git/" + rootProject.file('.git/HEAD').text.trim().split(' ')[1]).text[0..7].trim();
 
 sourceCompatibility = JavaVersion.VERSION_15
 
@@ -29,7 +35,7 @@ task fatJar(type: Jar) {
     If it's a directory, it just puts it in, if it's a jar, it unzips it, if it's neither
     it just puts it in.
      */
-    baseName = project.name + '-all'
+    archiveFileName = project.name + ".jar"
     from {
         configurations.compile.collect {
             if (it.isDirectory()) {
