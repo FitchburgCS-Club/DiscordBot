@@ -690,7 +690,7 @@ public enum Command {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
 			try {
-				java.io.File file = new java.io.File("/usr/share/discordbot/FSUCSC-Discord-Bot.jar");
+				java.io.File file = new java.io.File("/usr/share/discordbot/Bot.jar");
 				java.util.jar.JarFile jar = new java.util.jar.JarFile(file);
 				java.util.jar.Manifest manifest = jar.getManifest();
 
