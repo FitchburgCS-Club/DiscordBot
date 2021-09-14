@@ -283,11 +283,11 @@ public enum Command {
 				List<String> requestlist = lines.collect(Collectors.toList());
 				for (int i = 1; i < requestlist.size() + 1; i++) {
 					String[] parts = requestlist.get(i - 1).split("\\|");
-					//NOTE(Michael): parts[0] == Content, parts[1] == Author
+					// NOTE(Michael): parts[0] == Content, parts[1] == Author
 					parts[1] = event.getGuild()
 					                .getMemberById(parts[1])
 					                .getEffectiveName();
-					// @Robustness This function will will throw a null pointer exception if the user who requested something has left the server.
+					// @@Robustness This function will will throw a null pointer exception if the user who requested something has left the server.
 					// We ought to create a error handler for this.
 					reply.append(i)
 					     .append(". ")
@@ -362,7 +362,7 @@ public enum Command {
 			try {
 				InputStream img = new FileInputStream("./img/mackaystandard.jpg");
 				event.getChannel()
-				     .sendFile(img, "mackaystandard.jpg") //TODO(Michael): I think there's a way to include images in embeds? might be a cool edit.
+				     .sendFile(img, "mackaystandard.jpg") // @@TODO(Michael): I think there's a way to include images in embeds? might be a cool edit.
 				     .embed(builder.build())
 				     .queue();
 			}
@@ -596,7 +596,7 @@ public enum Command {
 	          """) {
 		@Override
 		public void execute (MessageReceivedEvent event, String args) {
-			// TODO(Zack)
+			// @@TODO(Zack)
 			// Split the text into lines if it becomes to wide
 			// Make a better way of centering text, the current way is garbagio
 			String tmpDir = System.getProperty("java.io.tmpdir");

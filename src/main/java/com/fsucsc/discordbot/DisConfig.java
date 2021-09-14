@@ -15,7 +15,7 @@ public final class DisConfig {
 	final static String OutputDir = ""; // Make sure to include the trailing "/"
 	final static ArrayList<String> BlacklistedUsers = new ArrayList<>();
 
-	//TODO: change these into ids
+	// @@TODO: change these into ids
 	static TextChannel ErrorChannel = null; ///A channel to use for error reporting. Use this to report to errors when it is unclear what channel the error should be reported in.
 	static Role PrivilegedRole;
 }

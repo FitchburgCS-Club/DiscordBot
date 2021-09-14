@@ -29,7 +29,7 @@ public class Bot {
 	static void SendMessage (MessageChannel channel, String contents) {
 		System.out.println("Sending Message: " + contents);
 		try {
-			// @Improvement we should split on a word, or maybe even a line of text?
+			// @@Improvement(Michael) we should split on a word, or maybe even a line of text?
 			// Don't count on this function's splitting, it's better to do it yourself.
 			while (true) {
 				channel.sendMessage(contents.substring(0, 2000)).queue();
@@ -58,10 +58,10 @@ public class Bot {
 	static void ReportStackTrace (MessageChannel channel, Throwable ex) {
 		StringWriter sw = new StringWriter();
 		ex.printStackTrace(new PrintWriter(sw));
-		//TODO(Michael): Should we make a bunch of random error messages?
-		//na... only I would find that funny...
+		// @@TODO(Michael): Should we make a bunch of random error messages?
+		// na... only I would find that funny...
 
-		//TODO(Zack): No, that'd be hilarious
+		// @@TODO(Zack): No, that'd be hilarious
 		// Maybe some like
 		// Some of these 1s and 0s are mixed up
 		// Ouch, that bytes
@@ -80,7 +80,7 @@ public class Bot {
 			errorChannelId = scan.nextLine();
 			privilegedRoleId = scan.nextLine();
 
-			//TODO(Michael): Load tasks that were not completed before we shutdown last.
+			// @@TODO(Michael): Load tasks that were not completed before we shutdown last.
 			if (scan.hasNextLine()) { //Note(Michael): having a line for the whitelistedUserId is optional.
 				DisConfig.WhitelistedUserId = Long.parseLong(scan.nextLine());
 			}
@@ -91,7 +91,7 @@ public class Bot {
 		catch (FileNotFoundException | NoSuchElementException ex) {
 			System.out.println("Error opening and reading config file.");
 			System.out.println("Are you sure it exists and contains the token for the discord bot?");
-			//NOTE(Michael): when working on the project, the 'config' file should be placed at the root of the repo
+			// NOTE(Michael): when working on the project, the 'config' file should be placed at the root of the repo
 			System.exit(-1);
 		}
 		catch (Exception ex) {

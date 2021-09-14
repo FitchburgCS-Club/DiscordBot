@@ -29,8 +29,8 @@ public class CommandListener extends ListenerAdapter {
 				args = "";
 			}
 
-			//TODO(Michael): replace this with actual logging code.
-			//Is just this actually sufficient?
+			// @@TODO(Michael): replace this with actual logging code.
+			// Is just this actually sufficient?
 			System.out.println("Command: " + command + "   Args: " + args);
 
 			for (String id : DisConfig.BlacklistedUsers) {
@@ -40,7 +40,7 @@ public class CommandListener extends ListenerAdapter {
 						Command.BLACKLIST.execute(event, args);
 					}
 
-					return; //NOTE(Michael): Blacklisted users don't get past this point.
+					return; // NOTE(Michael): Blacklisted users don't get past this point.
 				}
 			}
 
