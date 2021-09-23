@@ -95,7 +95,7 @@ class MeetingNotif implements Runnable {
 		if (sendChannel != null) {
 
 			if (subscribedRoleId.equals("0")) {
-				Bot.SendMessage(sendChannel, "@ everyone " + message);
+				Bot.SendMessage(sendChannel, "@everyone " + message);
 			}
 			else {
 				Bot.SendMessage(sendChannel, "<@&" + subscribedRoleId + "> " + message);
