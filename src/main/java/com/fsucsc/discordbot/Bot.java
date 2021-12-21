@@ -56,18 +56,28 @@ public class Bot {
 	 * @param ex the exception
 	 */
 	static void ReportStackTrace (MessageChannel channel, Throwable ex) {
+		// @@TODO(Michael): My sense of humor can't be the only one. We need more funny messages!
+		final String[] ERROR_MESSAGES = {
+				"An unexpected exception occurred! You should show this to a programmer! Oh, wait...",
+				"You're supposed to do what I want! Not what I say!",
+				"The Bot's done something exceptional!",
+				"Boasting 100% uptime, 90% of the time.",
+				"This bot is a work of fiction, it's functions have passed into fantasy.",
+				"Look what you've done! Don't worry DiscordBot, they can't hurt you now...",
+				"Are you *sure* these bits are in the right order???",
+				"Aye... this bytes...",
+				"You just ***had*** to go and ruin his run!", // (Michael): Quite proud of this one
+				"Now that you're calmed down, tell me how it all went wrong.",
+				"This is the price of progress!",
+				"You smell that? That's the scent of a commit being born.",
+				"Now, in an ideal world, you'd never see any of this...",
+				};
+
 		StringWriter sw = new StringWriter();
 		ex.printStackTrace(new PrintWriter(sw));
-		// @@TODO(Michael): Should we make a bunch of random error messages?
-		// na... only I would find that funny...
-
-		// @@TODO(Zack): No, that'd be hilarious
-		// Maybe some like
-		// Some of these 1s and 0s are mixed up
-		// Ouch, that bytes
-		// Bot's borked. Call in the nerds.
-
-		Bot.SendMessage(channel, "An unexpected exception occurred! You should show this to a programmer-- oh wait...\n" + sw.toString());
+		// @@TODO(Michael) In my experience the "batteries-included" random in java isn't great quality. Good quality random probably doesn't really matter in this case, but some of these error messages might inadvertently be more rare for no apparent reason.
+		int RandomIndex = (int)(Math.random() * (double)ERROR_MESSAGES.length);
+		Bot.SendMessage(channel, ERROR_MESSAGES[RandomIndex] + "\n" + sw.toString());
 	}
 
 	public static void main (String[] args) {
